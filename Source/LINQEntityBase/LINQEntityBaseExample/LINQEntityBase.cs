@@ -153,7 +153,7 @@ namespace LINQEntityBaseExample
         {
             get
             {
-                // If the timestamp is zero bytes then it's new.
+                // If the timestamp is null then it's new.
                 return _entityVersionProperty.GetValue(this, null) == null;
             }
         }

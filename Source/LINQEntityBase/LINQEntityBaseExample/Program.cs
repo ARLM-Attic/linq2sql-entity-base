@@ -142,6 +142,7 @@ namespace LINQEntityBaseExample
                 Console.WriteLine("---------------");
                 Console.WriteLine("Changes Comitted");
                 Console.WriteLine("---------------");
+
             }
 
             Console.ReadKey();
