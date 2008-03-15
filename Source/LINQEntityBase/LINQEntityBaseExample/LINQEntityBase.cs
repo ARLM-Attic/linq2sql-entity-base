@@ -35,7 +35,7 @@ namespace LINQEntityBaseExample
         {
             FindImportantProperties();
             BindToEntityEvents();
-            _entityHierarchy = new EntityHierarchy(this, _entityAssociationProperties);
+            _entityTree = new EntityTree(this, _entityAssociationProperties);
         }
 
         #endregion constructor
@@ -48,7 +48,7 @@ namespace LINQEntityBaseExample
         private PropertyInfo _entityVersionProperty; // stores the property info for the row stamp field.
         private Dictionary<string, PropertyInfo> _entityAssociationProperties = new Dictionary<string, PropertyInfo>(); // stores the property info for associations
         private Dictionary<string, PropertyInfo> _entityAssociationFKProperties = new Dictionary<string, PropertyInfo>(); // stores the property info for foreingKey associations
-        private EntityHierarchy _entityHierarchy; //used to hold the private class that allows entity hierarchy to be enumerated
+        private EntityTree _entityTree; //used to hold the private class that allows entity Tree to be enumerated
 
         /// <summary>
         /// Returns an ID that is unique for this object.
@@ -131,10 +131,9 @@ namespace LINQEntityBaseExample
                 // Check if it's new and it's an association. 
                 // If the entity is new, it's new not modified so ignore.
                 // If the property is an association then mark the entity as modified.
-                if (!IsNew && 
+                if (!IsNew &&
                     !_entityAssociationProperties.ContainsKey(e.PropertyName) &&
                     !_entityAssociationFKProperties.ContainsKey(e.PropertyName))
-                    
                 {
                     _isModified = true;
                 }
@@ -199,9 +198,9 @@ namespace LINQEntityBaseExample
         /// This method flattens the hierachy of objects into a single list that can be queried by linq
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<LINQEntityBase> GetEntityHierarchy()
+        public IEnumerable<LINQEntityBase> ToEntityTree()
         {
-            return (from t in _entityHierarchy
+            return (from t in _entityTree
                     select t);
         }
 
@@ -213,7 +212,7 @@ namespace LINQEntityBaseExample
         /// <param name="targetDataContext">The data context that will apply the changes</param>
         public void SynchroniseWithDataContext(DataContext targetDataContext)
         {
-            foreach (LINQEntityBase entity in this.GetEntityHierarchy())
+            foreach (LINQEntityBase entity in this.ToEntityTree())
             {
                 if (!entity.IsNew && !entity.IsModified)
                     targetDataContext.GetTable(entity.GetType()).Attach(entity, false);
@@ -232,15 +231,15 @@ namespace LINQEntityBaseExample
         #region private_classes
 
         /// <summary>
-        /// This class is used internally to implement IEnumerable, so that the hierarchy can
+        /// This class is used internally to implement IEnumerable, so that the Tree can
         /// be enumerated by LINQ queries.
         /// </summary>
-        private class EntityHierarchy : IEnumerable<LINQEntityBase>
+        private class EntityTree : IEnumerable<LINQEntityBase>
         {
             private Dictionary<string, PropertyInfo> _entityAssociationProperties;
             private LINQEntityBase _entityRoot;
 
-            public EntityHierarchy(LINQEntityBase EntityRoot, Dictionary<string, PropertyInfo> EntityAssociationProperties)
+            public EntityTree(LINQEntityBase EntityRoot, Dictionary<string, PropertyInfo> EntityAssociationProperties)
             {
                 _entityRoot = EntityRoot;
                 _entityAssociationProperties = EntityAssociationProperties;
@@ -249,27 +248,25 @@ namespace LINQEntityBaseExample
             // implement the GetEnumerator Type
             public IEnumerator<LINQEntityBase> GetEnumerator()
             {
-                Type entityType;
-
                 // return the current object
                 yield return _entityRoot;
 
                 // return the children (using reflection)
                 foreach (PropertyInfo propInfo in _entityAssociationProperties.Values)
                 {
-                    // Is it an EntitySet<>?
+                    // Is it an EntitySet<> ?
                     if (propInfo.PropertyType.IsGenericType && propInfo.PropertyType.GetGenericTypeDefinition() == typeof(EntitySet<>))
                     {
                         // It's an EntitySet<> so lets grab the value, loop through each value and
                         // return each value as an EntityBase.
-                        foreach (var entity in propInfo.GetValue(_entityRoot, null) as IEnumerable)
-                        {
-                            entityType = entity.GetType();
+                        IEnumerator entityList = (propInfo.GetValue(_entityRoot, null) as IEnumerable).GetEnumerator();
 
-                            if (entityType.IsSubclassOf(typeof(LINQEntityBase)))
+                        while (entityList.MoveNext() == true)
+                        {
+                            if (entityList.Current.GetType().IsSubclassOf(typeof(LINQEntityBase)))
                             {
-                                //Ask for these children for their section of the tree.
-                                foreach (LINQEntityBase subEntity in (entity as LINQEntityBase).GetEntityHierarchy())
+                                LINQEntityBase currentEntity = (LINQEntityBase)entityList.Current;
+                                foreach (LINQEntityBase subEntity in currentEntity.ToEntityTree())
                                 {
                                     yield return subEntity;
                                 }
@@ -279,7 +276,7 @@ namespace LINQEntityBaseExample
                     else if (propInfo.PropertyType.IsSubclassOf(typeof(LINQEntityBase)))
                     {
                         //Ask for these children for their section of the tree.
-                        foreach (LINQEntityBase subEntity in (propInfo.GetValue(_entityRoot, null) as LINQEntityBase).GetEntityHierarchy())
+                        foreach (LINQEntityBase subEntity in (propInfo.GetValue(_entityRoot, null) as LINQEntityBase).ToEntityTree())
                         {
                             yield return subEntity;
                         }
@@ -293,7 +290,6 @@ namespace LINQEntityBaseExample
             {
                 return this.GetEnumerator();
             }
-
         }
 
         #endregion

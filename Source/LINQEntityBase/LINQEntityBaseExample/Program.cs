@@ -89,7 +89,7 @@ namespace LINQEntityBaseExample
                 Console.WriteLine("---------------");
                 Console.WriteLine("Changes Tracked");
                 Console.WriteLine("---------------");
-                foreach (LINQEntityBase entity in customers.First().GetEntityHierarchy())
+                foreach (LINQEntityBase entity in customers.First().ToEntityTree())
                 {
                     if (entity.IsNew)
                         Console.WriteLine("--> Added: {0}", entity.LINQEntityGUID);
@@ -111,7 +111,7 @@ namespace LINQEntityBaseExample
             /// WE ARE NOW DISCONNECTED AGAIN! ///
 
             // Delete an order (NOTE: it's using the flat list!)
-            List<Order> ordersDelete = (from o in customers.First().GetEntityHierarchy().OfType<Order>()
+            List<Order> ordersDelete = (from o in customers.First().ToEntityTree().OfType<Order>()
                                        where o.ShipName == "Delete Me Later!"
                                        select o).ToList();
 
@@ -127,7 +127,7 @@ namespace LINQEntityBaseExample
                 Console.WriteLine("---------------");
                 Console.WriteLine("Changes Tracked");
                 Console.WriteLine("---------------");
-                foreach (LINQEntityBase entity in customers.First().GetEntityHierarchy())
+                foreach (LINQEntityBase entity in customers.First().ToEntityTree())
                 {
                     if (entity.IsNew)
                         Console.WriteLine("--> Added: {0}", entity.LINQEntityGUID);
