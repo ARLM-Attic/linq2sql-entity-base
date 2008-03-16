@@ -146,7 +146,6 @@ namespace LINQEntityBaseExample
             }
 
             Console.ReadKey();
-            Order_Detail fred = new Order_Detail();
         }
 
     }
