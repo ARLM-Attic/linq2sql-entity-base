@@ -107,7 +107,7 @@ namespace LINQEntityBaseExample
 
             // By the end of this process, if we haven't found the row version property, complain.
             if (_entityVersionProperty == null)
-                throw new ApplicationException("No RowVersion Property Defined, you must include a version property.");
+                throw new ApplicationException("No TimeStamp column Defined, you must define one column where the TimeStamp=True in your LINQ to SQL entity.");
         }
 
         /// <summary>
