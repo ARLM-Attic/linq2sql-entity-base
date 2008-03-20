@@ -212,6 +212,12 @@ namespace LINQEntityBaseExample
         /// <param name="targetDataContext">The data context that will apply the changes</param>
         public void SynchroniseWithDataContext(DataContext targetDataContext)
         {
+            // Before doing anything, check to make sure that the new datacontext
+            // doesn't try any deferred (lazy) loading
+            if(targetDataContext.DeferredLoadingEnabled == true)
+                throw new ApplicationException("Syncronisation requires that the Deferred loading is disabled on the Target DataContext");
+
+
             foreach (LINQEntityBase entity in this.ToEntityTree())
             {
                 if (!entity.IsNew && !entity.IsModified)

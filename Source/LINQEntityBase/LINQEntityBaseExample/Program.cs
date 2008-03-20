@@ -137,6 +137,7 @@ namespace LINQEntityBaseExample
                         Console.WriteLine("-->Deleted {0}", entity.LINQEntityGUID);
 
                 }
+                db.DeferredLoadingEnabled = false;
                 customers.First().SynchroniseWithDataContext(db);
                 db.SubmitChanges();
                 Console.WriteLine("---------------");
