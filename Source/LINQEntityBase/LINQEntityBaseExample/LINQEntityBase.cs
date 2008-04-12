@@ -412,10 +412,16 @@ namespace LINQEntityBaseExample
                     }
                     else if (propInfo.PropertyType.IsSubclassOf(typeof(LINQEntityBase)))
                     {
-                        //Ask for these children for their section of the tree.
-                        foreach (LINQEntityBase subEntity in (propInfo.GetValue(_entityRoot, null) as LINQEntityBase).ToEntityTree())
+                        // Grab the value of the entity
+                        LINQEntityBase entity = propInfo.GetValue(_entityRoot, null) as LINQEntityBase;
+                        
+                        if (entity != null)
                         {
-                            yield return subEntity;
+                            //Ask for these children for their section of the tree.
+                            foreach (LINQEntityBase subEntity in (propInfo.GetValue(_entityRoot, null) as LINQEntityBase).ToEntityTree())
+                            {
+                                yield return subEntity;
+                            }
                         }
                     }
                 }
