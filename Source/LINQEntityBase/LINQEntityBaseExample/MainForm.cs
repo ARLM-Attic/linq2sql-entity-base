@@ -287,7 +287,7 @@ namespace LINQEntityBaseExample
                 Console.WriteLine("    Demo Finished      ");
                 Console.WriteLine("-----------------------");
 
-
+                txtInfo.Clear();
                 txtInfo.AppendText(consoleOutput.ToString());
                 txtInfo.SelectionStart = 0;
                 txtInfo.ScrollToCaret();
