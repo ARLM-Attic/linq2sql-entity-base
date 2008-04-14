@@ -24,6 +24,8 @@ namespace LINQEntityBaseExample
     /// 
     /// Note, for this to work Child entities should have property a RowVersion/Timestamp field (can be named anything)
     /// </summary>    
+    [DataContract()]
+    //[KnownType(typeof(Order))]
     public abstract class LINQEntityBase
     {
         #region constructor
@@ -33,8 +35,20 @@ namespace LINQEntityBaseExample
         /// </summary>
         protected LINQEntityBase()
         {
+            _entityGUID = Guid.NewGuid().ToString(); //a unique identifier for the entity
+
+            Init();
             FindImportantProperties();
-            BindToEntityEvents();
+            BindToEntityEvents();           
+        }
+
+        private void Init()
+        {
+            _isModified = false;
+            _isDeleted = false;
+            _hasChangeTrackingRoot = false;
+            _entityAssociationProperties = new Dictionary<string, PropertyInfo>();
+            _entityAssociationFKProperties = new Dictionary<string, PropertyInfo>();
             _entityTree = new EntityTree(this, _entityAssociationProperties);
         }
 
@@ -42,25 +56,16 @@ namespace LINQEntityBaseExample
 
         #region private_members
 
-        private bool _isModified = false; //whether or not a property has been changed
-        private bool _isDeleted = false; //indicates if the record should be deleted        
-        private bool _hasChangeTrackingRoot = false; //indicates if the record is being change tracked
-        private string _entityGUID = Guid.NewGuid().ToString(); //a unique identifier for the entity
+        private bool _isModified; //whether or not a property has been changed
+        private bool _isDeleted; //indicates if the record should be deleted        
+        private bool _hasChangeTrackingRoot; //indicates if the record is being change tracked
+        private string _entityGUID; //a unique identifier for the entity
         private PropertyInfo _entityVersionProperty; // stores the property info for the row stamp field.
-        private Dictionary<string, PropertyInfo> _entityAssociationProperties = new Dictionary<string, PropertyInfo>(); // stores the property info for associations
-        private Dictionary<string, PropertyInfo> _entityAssociationFKProperties = new Dictionary<string, PropertyInfo>(); // stores the property info for foreingKey associations
+        private Dictionary<string, PropertyInfo> _entityAssociationProperties; // stores the property info for associations
+        private Dictionary<string, PropertyInfo> _entityAssociationFKProperties; // stores the property info for foreingKey associations
         private EntityTree _entityTree; //used to hold the private class that allows entity Tree to be enumerated
-        private List<LINQEntityBase> _entitiesAll; //holds a list of all entities, regardless of their state.
+        private List<LINQEntityBase> _changeTrackingReferences; //holds a list of all entities, regardless of their state for the purpose of tracking changes.
         
-
-        /// <summary>
-        /// Returns an ID that is unique for this object.
-        /// </summary>
-        public string LINQEntityGUID
-        {
-            get { return _entityGUID; }
-        }
-
         /// <summary>
         /// This method binds to the events of the entity that are required.
         /// </summary>
@@ -191,8 +196,9 @@ namespace LINQEntityBaseExample
         }
 
         /// <summary>
-        /// Gets/Sets whether thyis entity has a change tracking root.
+        /// Gets/Sets whether this entity has a change tracking root.
         /// </summary>
+        [DataMember(Order = 4)]
         private bool HasChangeTrackingRoot
         {
             get
@@ -204,12 +210,85 @@ namespace LINQEntityBaseExample
                 _hasChangeTrackingRoot = value;
             }
         }
-        
-        #endregion private_members
 
+        /// <summary>
+        /// Gets/Sets the entities which have been deleted.
+        /// (Data Contract Serialization Only)
+        /// </summary>
+        [DataMember(Order = 5)]
+        private List<LINQEntityBase> DeletedEntities
+        {
+            get
+            {
+                if (_changeTrackingReferences != null)
+                {
+                    List<LINQEntityBase> entities = new List<LINQEntityBase>();
+                    entities.AddRange(_changeTrackingReferences.Where(e => e.IsDeleted == true));
+                    return entities;
+                }
+                else
+	            {
+                    return null;
+	            }           
+            }
+
+            set
+            {
+                _changeTrackingReferences = value;
+            }
+        }
+
+        /// <summary>
+        /// When starting deserialization, call this method to make sure that 
+        /// private variables are setup.
+        /// </summary>
+        /// <param name="sc"></param>
+        [OnDeserializing()]
+        private void BeforeDeserializing(System.Runtime.Serialization.StreamingContext sc)
+        {
+            Init();
+        }
+
+        /// <summary>
+        /// Called at the final stage of serialization to make sure that the interal
+        /// change tracking references are correct.
+        /// </summary> 
+        [OnDeserialized()]
+        private void AfterDeserialized(System.Runtime.Serialization.StreamingContext sc)
+        {
+            // if it's the root, _changeTrackingReferences will contain deleted references
+            // and we need to build a complete list of all objects - not just the deleted ones
+            if(_changeTrackingReferences != null)
+            {
+                _changeTrackingReferences = this.ToEntityTree();
+            }
+
+            FindImportantProperties();
+            BindToEntityEvents();  
+        }
+
+
+
+        #endregion private_members
+        
         #region public_members
 
 
+        /// <summary>
+        /// Returns an ID that is unique for this object.
+        /// </summary>
+        [DataMember(Order = 1)]
+        public string LINQEntityGUID
+        {
+            get 
+            { 
+                return _entityGUID; 
+            }
+            private set 
+            { 
+                _entityGUID = value; 
+            }
+        }
 
         /// <summary>
         /// Returns if the entity is new or not
@@ -227,6 +306,7 @@ namespace LINQEntityBaseExample
         /// Returns if the property is modified or allows caller to set if the
         /// object is modified.
         /// </summary> 
+        [DataMember(Order = 2)]
         public bool IsModified
         {
             get
@@ -246,11 +326,16 @@ namespace LINQEntityBaseExample
         /// <summary>
         /// Returns/Sets if the object has been marked for deletion.
         /// </summary>
+        [DataMember(Order = 3)]
         public bool IsDeleted
         {
             get
             {
                 return _isDeleted;
+            }
+            private set
+            {
+                _isDeleted = value;
             }
         }
 
@@ -268,9 +353,9 @@ namespace LINQEntityBaseExample
             entities = (from t in _entityTree                    
                        select t).ToList();
 
-            if (_entitiesAll != null)
+            if (_changeTrackingReferences != null)
             {
-                entities.AddRange(_entitiesAll.Where( e => e.IsDeleted == true));
+                entities.AddRange(_changeTrackingReferences.Where( e => e.IsDeleted == true));
             }
 
             return entities;
@@ -283,13 +368,13 @@ namespace LINQEntityBaseExample
         public void SetAsChangeTrackingRoot()
         {
             // Throw an exception if this object is already being change tracked
-            if (this._hasChangeTrackingRoot && this._entitiesAll == null)
+            if (this._hasChangeTrackingRoot && this._changeTrackingReferences == null)
                 throw new ApplicationException("This object is already in a Change Tracking Tree and cannot be the root.");
 
             // This is the root object, so grab a list of all the references and keep for later.
             // We need this, so that we can track entity deletions.
-            _entitiesAll = this._entityTree.ToList();
-            foreach (LINQEntityBase entity in _entitiesAll)
+            _changeTrackingReferences = this._entityTree.ToList();
+            foreach (LINQEntityBase entity in _changeTrackingReferences)
             {
                 entity.HasChangeTrackingRoot = true;
             }
@@ -319,7 +404,7 @@ namespace LINQEntityBaseExample
                 throw new ApplicationException("Syncronisation requires that the Deferred loading is disabled on the Target DataContext");
 
             // Also Make sure this entity is the change tracking root
-            if (this._entitiesAll == null)
+            if (this._changeTrackingReferences == null)
                 throw new ApplicationException("You cannot syncronise an entity that is not the change tracking root");
 
             List<LINQEntityBase> entities = this.ToEntityTree().ToList();          
@@ -412,16 +497,15 @@ namespace LINQEntityBaseExample
                     }
                     else if (propInfo.PropertyType.IsSubclassOf(typeof(LINQEntityBase)))
                     {
-                        // Grab the value of the entity
-                        LINQEntityBase entity = propInfo.GetValue(_entityRoot, null) as LINQEntityBase;
-                        
-                        if (entity != null)
+                        // ignore the property if it's null
+                        if (propInfo.GetValue(_entityRoot, null) != null)
                         {
                             //Ask for these children for their section of the tree.
                             foreach (LINQEntityBase subEntity in (propInfo.GetValue(_entityRoot, null) as LINQEntityBase).ToEntityTree())
                             {
                                 yield return subEntity;
                             }
+
                         }
                     }
                 }

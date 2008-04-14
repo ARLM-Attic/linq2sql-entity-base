@@ -18,6 +18,7 @@ namespace LINQEntityBaseExample
 	using System.Reflection;
 	using System.Linq;
 	using System.Linq.Expressions;
+	using System.Runtime.Serialization;
 	using System.ComponentModel;
 	using System;
 	
@@ -108,6 +109,7 @@ namespace LINQEntityBaseExample
 	}
 	
 	[Table(Name="dbo.[Order Details]")]
+	[DataContract()]
 	public partial class Order_Detail : LINQEntityBaseExample.LINQEntityBase, INotifyPropertyChanging, INotifyPropertyChanged
 	{
 		
@@ -149,12 +151,11 @@ namespace LINQEntityBaseExample
 		
 		public Order_Detail()
 		{
-			this._Order = default(EntityRef<Order>);
-			this._Product = default(EntityRef<Product>);
-			OnCreated();
+			this.Initialize();
 		}
 		
 		[Column(Storage="_OrderID", DbType="Int NOT NULL", IsPrimaryKey=true, UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=1)]
 		public int OrderID
 		{
 			get
@@ -179,6 +180,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_ProductID", DbType="Int NOT NULL", IsPrimaryKey=true, UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=2)]
 		public int ProductID
 		{
 			get
@@ -203,6 +205,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_UnitPrice", DbType="Money NOT NULL", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=3)]
 		public decimal UnitPrice
 		{
 			get
@@ -223,6 +226,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_Quantity", DbType="SmallInt NOT NULL", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=4)]
 		public short Quantity
 		{
 			get
@@ -243,6 +247,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_Discount", DbType="Real NOT NULL", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=5)]
 		public float Discount
 		{
 			get
@@ -263,6 +268,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_RowVersion", AutoSync=AutoSync.Always, DbType="rowversion NOT NULL", CanBeNull=false, IsDbGenerated=true, IsVersion=true, UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=6)]
 		public System.Data.Linq.Binary RowVersion
 		{
 			get
@@ -369,9 +375,24 @@ namespace LINQEntityBaseExample
 				this.PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
 			}
 		}
+		
+		private void Initialize()
+		{
+			this._Order = default(EntityRef<Order>);
+			this._Product = default(EntityRef<Product>);
+			OnCreated();
+		}
+		
+		[OnDeserializing()]
+		[System.ComponentModel.EditorBrowsableAttribute(EditorBrowsableState.Never)]
+		public void OnDeserializing(StreamingContext context)
+		{
+			this.Initialize();
+		}
 	}
 	
 	[Table(Name="dbo.Orders")]
+	[DataContract()]
 	public partial class Order : LINQEntityBaseExample.LINQEntityBase, INotifyPropertyChanging, INotifyPropertyChanged
 	{
 		
@@ -411,6 +432,8 @@ namespace LINQEntityBaseExample
 		
 		private EntityRef<Customer> _Customer;
 		
+		private bool serializing;
+		
     #region Extensibility Method Definitions
     partial void OnLoaded();
     partial void OnValidate(System.Data.Linq.ChangeAction action);
@@ -449,12 +472,11 @@ namespace LINQEntityBaseExample
 		
 		public Order()
 		{
-			this._Order_Details = new EntitySet<Order_Detail>(new Action<Order_Detail>(this.attach_Order_Details), new Action<Order_Detail>(this.detach_Order_Details));
-			this._Customer = default(EntityRef<Customer>);
-			OnCreated();
+			this.Initialize();
 		}
 		
 		[Column(Storage="_OrderID", AutoSync=AutoSync.OnInsert, DbType="Int NOT NULL IDENTITY", IsPrimaryKey=true, IsDbGenerated=true, UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=1)]
 		public int OrderID
 		{
 			get
@@ -475,6 +497,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_CustomerID", DbType="NChar(5)", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=2)]
 		public string CustomerID
 		{
 			get
@@ -499,6 +522,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_EmployeeID", DbType="Int", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=3)]
 		public System.Nullable<int> EmployeeID
 		{
 			get
@@ -519,6 +543,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_OrderDate", DbType="DateTime", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=4)]
 		public System.Nullable<System.DateTime> OrderDate
 		{
 			get
@@ -539,6 +564,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_RequiredDate", DbType="DateTime", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=5)]
 		public System.Nullable<System.DateTime> RequiredDate
 		{
 			get
@@ -559,6 +585,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_ShippedDate", DbType="DateTime", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=6)]
 		public System.Nullable<System.DateTime> ShippedDate
 		{
 			get
@@ -579,6 +606,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_ShipVia", DbType="Int", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=7)]
 		public System.Nullable<int> ShipVia
 		{
 			get
@@ -599,6 +627,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_Freight", DbType="Money", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=8)]
 		public System.Nullable<decimal> Freight
 		{
 			get
@@ -619,6 +648,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_ShipName", DbType="NVarChar(40)", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=9)]
 		public string ShipName
 		{
 			get
@@ -639,6 +669,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_ShipAddress", DbType="NVarChar(60)", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=10)]
 		public string ShipAddress
 		{
 			get
@@ -659,6 +690,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_ShipCity", DbType="NVarChar(15)", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=11)]
 		public string ShipCity
 		{
 			get
@@ -679,6 +711,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_ShipRegion", DbType="NVarChar(15)", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=12)]
 		public string ShipRegion
 		{
 			get
@@ -699,6 +732,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_ShipPostalCode", DbType="NVarChar(10)", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=13)]
 		public string ShipPostalCode
 		{
 			get
@@ -719,6 +753,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_ShipCountry", DbType="NVarChar(15)", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=14)]
 		public string ShipCountry
 		{
 			get
@@ -739,6 +774,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_RowVersion", AutoSync=AutoSync.Always, DbType="rowversion NOT NULL", CanBeNull=false, IsDbGenerated=true, IsVersion=true, UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=15)]
 		public System.Data.Linq.Binary RowVersion
 		{
 			get
@@ -759,10 +795,16 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Association(Name="Order_Order_Detail", Storage="_Order_Details", OtherKey="OrderID")]
+		[DataMember(Order=16, EmitDefaultValue=false)]
 		public EntitySet<Order_Detail> Order_Details
 		{
 			get
 			{
+				if ((this.serializing 
+							&& (this._Order_Details.HasLoadedOrAssignedValues == false)))
+				{
+					return null;
+				}
 				return this._Order_Details;
 			}
 			set
@@ -836,9 +878,38 @@ namespace LINQEntityBaseExample
 			this.SendPropertyChanging();
 			entity.Order = null;
 		}
+		
+		private void Initialize()
+		{
+			this._Order_Details = new EntitySet<Order_Detail>(new Action<Order_Detail>(this.attach_Order_Details), new Action<Order_Detail>(this.detach_Order_Details));
+			this._Customer = default(EntityRef<Customer>);
+			OnCreated();
+		}
+		
+		[OnDeserializing()]
+		[System.ComponentModel.EditorBrowsableAttribute(EditorBrowsableState.Never)]
+		public void OnDeserializing(StreamingContext context)
+		{
+			this.Initialize();
+		}
+		
+		[OnSerializing()]
+		[System.ComponentModel.EditorBrowsableAttribute(EditorBrowsableState.Never)]
+		public void OnSerializing(StreamingContext context)
+		{
+			this.serializing = true;
+		}
+		
+		[OnSerialized()]
+		[System.ComponentModel.EditorBrowsableAttribute(EditorBrowsableState.Never)]
+		public void OnSerialized(StreamingContext context)
+		{
+			this.serializing = false;
+		}
 	}
 	
 	[Table(Name="dbo.Products")]
+	[DataContract()]
 	public partial class Product : LINQEntityBaseExample.LINQEntityBase, INotifyPropertyChanging, INotifyPropertyChanged
 	{
 		
@@ -867,6 +938,8 @@ namespace LINQEntityBaseExample
 		private System.Data.Linq.Binary _RowVersion;
 		
 		private EntityRef<Order_Detail> _Order_Details;
+		
+		private bool serializing;
 		
     #region Extensibility Method Definitions
     partial void OnLoaded();
@@ -898,11 +971,11 @@ namespace LINQEntityBaseExample
 		
 		public Product()
 		{
-			this._Order_Details = default(EntityRef<Order_Detail>);
-			OnCreated();
+			this.Initialize();
 		}
 		
 		[Column(Storage="_ProductID", AutoSync=AutoSync.OnInsert, DbType="Int NOT NULL IDENTITY", IsPrimaryKey=true, IsDbGenerated=true, UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=1)]
 		public int ProductID
 		{
 			get
@@ -923,6 +996,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_ProductName", DbType="NVarChar(40) NOT NULL", CanBeNull=false, UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=2)]
 		public string ProductName
 		{
 			get
@@ -943,6 +1017,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_SupplierID", DbType="Int", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=3)]
 		public System.Nullable<int> SupplierID
 		{
 			get
@@ -963,6 +1038,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_CategoryID", DbType="Int", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=4)]
 		public System.Nullable<int> CategoryID
 		{
 			get
@@ -983,6 +1059,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_QuantityPerUnit", DbType="NVarChar(20)", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=5)]
 		public string QuantityPerUnit
 		{
 			get
@@ -1003,6 +1080,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_UnitPrice", DbType="Money", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=6)]
 		public System.Nullable<decimal> UnitPrice
 		{
 			get
@@ -1023,6 +1101,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_UnitsInStock", DbType="SmallInt", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=7)]
 		public System.Nullable<short> UnitsInStock
 		{
 			get
@@ -1043,6 +1122,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_UnitsOnOrder", DbType="SmallInt", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=8)]
 		public System.Nullable<short> UnitsOnOrder
 		{
 			get
@@ -1063,6 +1143,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_ReorderLevel", DbType="SmallInt", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=9)]
 		public System.Nullable<short> ReorderLevel
 		{
 			get
@@ -1083,6 +1164,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_Discontinued", DbType="Bit NOT NULL", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=10)]
 		public bool Discontinued
 		{
 			get
@@ -1103,6 +1185,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_RowVersion", AutoSync=AutoSync.Always, DbType="rowversion NOT NULL", CanBeNull=false, IsDbGenerated=true, IsVersion=true, UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=11)]
 		public System.Data.Linq.Binary RowVersion
 		{
 			get
@@ -1123,10 +1206,16 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Association(Name="Product_Order_Detail", Storage="_Order_Details", ThisKey="ProductID", OtherKey="ProductID", IsUnique=true, IsForeignKey=false)]
+		[DataMember(Order=12, EmitDefaultValue=false)]
 		public Order_Detail Order_Details
 		{
 			get
 			{
+				if ((this.serializing 
+							&& (this._Order_Details.HasLoadedOrAssignedValue == false)))
+				{
+					return null;
+				}
 				return this._Order_Details.Entity;
 			}
 			set
@@ -1170,9 +1259,37 @@ namespace LINQEntityBaseExample
 				this.PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
 			}
 		}
+		
+		private void Initialize()
+		{
+			this._Order_Details = default(EntityRef<Order_Detail>);
+			OnCreated();
+		}
+		
+		[OnDeserializing()]
+		[System.ComponentModel.EditorBrowsableAttribute(EditorBrowsableState.Never)]
+		public void OnDeserializing(StreamingContext context)
+		{
+			this.Initialize();
+		}
+		
+		[OnSerializing()]
+		[System.ComponentModel.EditorBrowsableAttribute(EditorBrowsableState.Never)]
+		public void OnSerializing(StreamingContext context)
+		{
+			this.serializing = true;
+		}
+		
+		[OnSerialized()]
+		[System.ComponentModel.EditorBrowsableAttribute(EditorBrowsableState.Never)]
+		public void OnSerialized(StreamingContext context)
+		{
+			this.serializing = false;
+		}
 	}
 	
 	[Table(Name="dbo.Customers")]
+	[DataContract()]
 	public partial class Customer : LINQEntityBaseExample.LINQEntityBase, INotifyPropertyChanging, INotifyPropertyChanged
 	{
 		
@@ -1203,6 +1320,8 @@ namespace LINQEntityBaseExample
 		private System.Data.Linq.Binary _RowVersion;
 		
 		private EntitySet<Order> _Orders;
+		
+		private bool serializing;
 		
     #region Extensibility Method Definitions
     partial void OnLoaded();
@@ -1236,11 +1355,11 @@ namespace LINQEntityBaseExample
 		
 		public Customer()
 		{
-			this._Orders = new EntitySet<Order>(new Action<Order>(this.attach_Orders), new Action<Order>(this.detach_Orders));
-			OnCreated();
+			this.Initialize();
 		}
 		
 		[Column(Storage="_CustomerID", DbType="NChar(5) NOT NULL", CanBeNull=false, IsPrimaryKey=true, UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=1)]
 		public string CustomerID
 		{
 			get
@@ -1261,6 +1380,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_CompanyName", DbType="NVarChar(40) NOT NULL", CanBeNull=false, UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=2)]
 		public string CompanyName
 		{
 			get
@@ -1281,6 +1401,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_ContactName", DbType="NVarChar(30)", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=3)]
 		public string ContactName
 		{
 			get
@@ -1301,6 +1422,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_ContactTitle", DbType="NVarChar(30)", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=4)]
 		public string ContactTitle
 		{
 			get
@@ -1321,6 +1443,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_Address", DbType="NVarChar(60)", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=5)]
 		public string Address
 		{
 			get
@@ -1341,6 +1464,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_City", DbType="NVarChar(15)", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=6)]
 		public string City
 		{
 			get
@@ -1361,6 +1485,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_Region", DbType="NVarChar(15)", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=7)]
 		public string Region
 		{
 			get
@@ -1381,6 +1506,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_PostalCode", DbType="NVarChar(10)", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=8)]
 		public string PostalCode
 		{
 			get
@@ -1401,6 +1527,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_Country", DbType="NVarChar(15)", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=9)]
 		public string Country
 		{
 			get
@@ -1421,6 +1548,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_Phone", DbType="NVarChar(24)", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=10)]
 		public string Phone
 		{
 			get
@@ -1441,6 +1569,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_Fax", DbType="NVarChar(24)", UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=11)]
 		public string Fax
 		{
 			get
@@ -1461,6 +1590,7 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Column(Storage="_RowVersion", AutoSync=AutoSync.Always, DbType="rowversion NOT NULL", CanBeNull=false, IsDbGenerated=true, IsVersion=true, UpdateCheck=UpdateCheck.Never)]
+		[DataMember(Order=12)]
 		public System.Data.Linq.Binary RowVersion
 		{
 			get
@@ -1481,10 +1611,16 @@ namespace LINQEntityBaseExample
 		}
 		
 		[Association(Name="Customer_Order", Storage="_Orders", OtherKey="CustomerID")]
+		[DataMember(Order=13, EmitDefaultValue=false)]
 		public EntitySet<Order> Orders
 		{
 			get
 			{
+				if ((this.serializing 
+							&& (this._Orders.HasLoadedOrAssignedValues == false)))
+				{
+					return null;
+				}
 				return this._Orders;
 			}
 			set
@@ -1523,6 +1659,33 @@ namespace LINQEntityBaseExample
 		{
 			this.SendPropertyChanging();
 			entity.Customer = null;
+		}
+		
+		private void Initialize()
+		{
+			this._Orders = new EntitySet<Order>(new Action<Order>(this.attach_Orders), new Action<Order>(this.detach_Orders));
+			OnCreated();
+		}
+		
+		[OnDeserializing()]
+		[System.ComponentModel.EditorBrowsableAttribute(EditorBrowsableState.Never)]
+		public void OnDeserializing(StreamingContext context)
+		{
+			this.Initialize();
+		}
+		
+		[OnSerializing()]
+		[System.ComponentModel.EditorBrowsableAttribute(EditorBrowsableState.Never)]
+		public void OnSerializing(StreamingContext context)
+		{
+			this.serializing = true;
+		}
+		
+		[OnSerialized()]
+		[System.ComponentModel.EditorBrowsableAttribute(EditorBrowsableState.Never)]
+		public void OnSerialized(StreamingContext context)
+		{
+			this.serializing = false;
 		}
 	}
 }
