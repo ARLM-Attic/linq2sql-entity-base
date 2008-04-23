@@ -25,7 +25,7 @@ namespace LINQEntityBaseExample
     /// Note, for this to work Child entities should have property a RowVersion/Timestamp field (can be named anything)
     /// </summary>    
     [DataContract()]
-    //[KnownType(typeof(Order))]
+    
     public abstract class LINQEntityBase
     {
         #region constructor
@@ -40,13 +40,17 @@ namespace LINQEntityBaseExample
             Init();
             FindImportantProperties();
             BindToEntityEvents();           
+
         }
 
         private void Init()
         {
+            _isNew = false;
             _isModified = false;
             _isDeleted = false;
-            _hasChangeTrackingRoot = false;
+            _isChangeTracked = false;
+            _isKeepOriginal = false;
+
             _entityAssociationProperties = new Dictionary<string, PropertyInfo>();
             _entityAssociationFKProperties = new Dictionary<string, PropertyInfo>();
             _entityTree = new EntityTree(this, _entityAssociationProperties);
@@ -56,16 +60,18 @@ namespace LINQEntityBaseExample
 
         #region private_members
 
+        private bool _isNew; // indicates if the record is new 
         private bool _isModified; //whether or not a property has been changed
-        private bool _isDeleted; //indicates if the record should be deleted        
-        private bool _hasChangeTrackingRoot; //indicates if the record is being change tracked
-        private string _entityGUID; //a unique identifier for the entity
-        private PropertyInfo _entityVersionProperty; // stores the property info for the row stamp field.
+        private bool _isDeleted; //indicates if the record should be deleted
+        private bool _isChangeTracked; //indicates if the record is being change tracked
+        private bool _isKeepOriginal; //indicates if the original record before modifications should be kept for use when syncing with DataContext later on.
+        private string _entityGUID; //a unique identifier for the entity       
         private Dictionary<string, PropertyInfo> _entityAssociationProperties; // stores the property info for associations
         private Dictionary<string, PropertyInfo> _entityAssociationFKProperties; // stores the property info for foreingKey associations
         private EntityTree _entityTree; //used to hold the private class that allows entity Tree to be enumerated
         private List<LINQEntityBase> _changeTrackingReferences; //holds a list of all entities, regardless of their state for the purpose of tracking changes.
-        
+        private LINQEntityBase _originalEntityValue; // holds the original entity values before modification
+        private LINQEntityBase _originalEntityValueTemp; // temporarily holds the original entity value until we no it's a true modification.
         /// <summary>
         /// This method binds to the events of the entity that are required.
         /// </summary>
@@ -74,8 +80,13 @@ namespace LINQEntityBaseExample
             INotifyPropertyChanged childEntityChanged;
             childEntityChanged = (INotifyPropertyChanged)this;
 
-            // bind the IsModified event, so when a property is changed the base class is aware of it.
-            childEntityChanged.PropertyChanged +=new PropertyChangedEventHandler(PropertyChanged);
+            INotifyPropertyChanging childEntityChanging;
+            childEntityChanging = (INotifyPropertyChanging)this;
+
+            // bind the events, so when a property is changed the base class is aware of it.
+            childEntityChanged.PropertyChanged += new PropertyChangedEventHandler(PropertyChanged);
+            childEntityChanging.PropertyChanging += new PropertyChangingEventHandler(PropertyChanging);
+
             
         }
 
@@ -83,8 +94,7 @@ namespace LINQEntityBaseExample
         /// Loops through the available properties on the class and gets the rowVersion and association properties
         /// </summary>
         private void FindImportantProperties()
-        {
-            ColumnAttribute columnAttribute;
+        {            
             AssociationAttribute assocAttribute;
 
             foreach (PropertyInfo propInfo in this.GetType().GetProperties())
@@ -102,20 +112,26 @@ namespace LINQEntityBaseExample
                         _entityAssociationFKProperties.Add(propInfo.Name, propInfo);
 
                 }
-                else if (_entityVersionProperty == null)
-                {
-                    // it wasn't an association, check to see it's a RowVersion (if we haven't already found it).
-                    columnAttribute = (ColumnAttribute)Attribute.GetCustomAttribute(propInfo, typeof(ColumnAttribute), false);
-                    if (columnAttribute != null && columnAttribute.IsVersion == true)
-                    {
-                        _entityVersionProperty = propInfo;
-                    }
-                }
             }
+        }
 
-            // By the end of this process, if we haven't found the row version property, complain.
-            if (_entityVersionProperty == null)
-                throw new ApplicationException("No TimeStamp column Defined, you must define one column where the TimeStamp=True in your LINQ to SQL entity.");
+
+        /// <summary>
+        /// Handles the property changing event sent from child object.
+        /// </summary>
+        /// <param name="sender">child object</param>
+        /// <param name="e">Property Changing arguements</param>
+        private void PropertyChanging(object sender, PropertyChangingEventArgs e)
+        {
+            // If it's a change tracked object, and it's not new
+            // grab a copy of the object incase it's going to be modified
+            if (this.IsChangeTracked == true && 
+                IsKeepOriginal == true && 
+                this.IsNew != true && 
+                OriginalEntityValue == null)
+            {
+                _originalEntityValueTemp = ShallowCopy(this);
+            }
         }
 
         /// <summary>
@@ -126,88 +142,114 @@ namespace LINQEntityBaseExample
         private void PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             PropertyInfo propInfo = null;
-            
-            // if the property being changed is the timestamp field
-            // assume this property is being set after a submit changes.
-            if (e.PropertyName == _entityVersionProperty.Name)
+
+            // if this object isn't change tracked yet, but it's parent
+            // is, this means it's a new object
+            if (this.IsChangeTracked == false)
             {
-                // the object can be assumed to be no longer in a modified or deleted state
-                // so reset the flags.  
-                // NOTE: IsNew does not need to be set because this is dynamically evaluated.
-                _isModified = false;
-                _isDeleted = false;
-            }
-            else
-            {
-                // Check if it's new and it's an association. 
-                // If the entity is new, it's not modified, so look into change tracking flag
-                // If it's an association parent->child (non FK) then ignore
-                // If it's an association child->parent (is FK) and value has been changed to null then it's a removal
-                // If it's none of the above it's modified.
-                if (!IsNew)
+                // Check to see if the parent object is change tracked
+                // If there is, set the new flag, and tell this new object it's tracked
+                if (_entityAssociationFKProperties.ContainsKey(e.PropertyName))
                 {
-                    // only go into this section if it's change tracked
-                    if (this.HasChangeTrackingRoot == true)
+                    if (_entityAssociationFKProperties.TryGetValue(e.PropertyName, out propInfo))
                     {
-                        if (!_entityAssociationProperties.ContainsKey(e.PropertyName))
+                        if (propInfo != null)
                         {
-                            if (_entityAssociationFKProperties.ContainsKey(e.PropertyName))
+                            LINQEntityBase parentEntity = (LINQEntityBase)propInfo.GetValue(this, null);
+
+                            if (parentEntity.IsChangeTracked == true)
                             {
-                                if (_entityAssociationFKProperties.TryGetValue(e.PropertyName, out propInfo))
+                                this.IsChangeTracked = true;
+                                this.IsNew = true;
+                            }
+                        }
+                    }
+                }
+            }
+            
+
+            //if the object is not new....
+            if (!IsNew)
+            {
+                // only go into this section if it's change tracked
+                if (this.IsChangeTracked == true)
+                {
+                    if (!_entityAssociationProperties.ContainsKey(e.PropertyName))
+                    {
+                        if (_entityAssociationFKProperties.ContainsKey(e.PropertyName))
+                        {
+                            if (_entityAssociationFKProperties.TryGetValue(e.PropertyName, out propInfo))
+                            {
+                                if ((propInfo != null) && (propInfo.GetValue(this, null) == null))
                                 {
-                                    if ((propInfo != null) && (propInfo.GetValue(this, null) == null))
-                                    {
-                                        _isDeleted = true;
-                                    }
+                                    _isDeleted = true;
+                                    
                                 }
                             }
-                            else
+                        }
+                        else
+                        {
+                            // if the object isn't already modified
+                            // set it as modified
+
+                            if (_isModified != true)
                             {
+                                this._originalEntityValue = this._originalEntityValueTemp;                                
                                 _isModified = true;
                             }
                         }
                     }
                 }
-                else
-                {
-                    // only go into this section if it's not changed tracked yet.
-                    if (this.HasChangeTrackingRoot == false)
-                    {
-                        // Check to see if the parent objec is change tracked
-                        // If there is, tell this new object it's tracked
-                        if (_entityAssociationFKProperties.ContainsKey(e.PropertyName))
-                        {
-                            if (_entityAssociationFKProperties.TryGetValue(e.PropertyName, out propInfo))
-                            {
-                                if (propInfo != null)
-                                {
-                                    LINQEntityBase entity = (LINQEntityBase)propInfo.GetValue(this, null);
+            }
 
-                                    if (entity.HasChangeTrackingRoot == true)
-                                    {
-                                        this.HasChangeTrackingRoot = true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+            this._originalEntityValueTemp = null;
+        }
+
+        /// <summary>
+        /// Gets/Sets whether this entity has a change tracking root.
+        /// </summary>
+        [DataMember(Order = 5)]
+        private bool IsChangeTracked
+        {
+            get
+            {
+                return _isChangeTracked;
+            }
+            set
+            {
+                _isChangeTracked = value;
             }
         }
 
         /// <summary>
         /// Gets/Sets whether this entity has a change tracking root.
         /// </summary>
-        [DataMember(Order = 4)]
-        private bool HasChangeTrackingRoot
+        [DataMember(Order = 6)]
+        private bool IsKeepOriginal
         {
             get
             {
-                return _hasChangeTrackingRoot;
+                return _isKeepOriginal;
             }
             set
             {
-                _hasChangeTrackingRoot = value;
+                _isKeepOriginal = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets/Sets the original entity value before any changes
+        /// </summary>
+        [DataMember(Order = 7)]
+        private LINQEntityBase OriginalEntityValue
+        {
+            get
+            {
+                return _originalEntityValue;
+            }
+            set
+            {
+                _originalEntityValue = value;
             }
         }
 
@@ -215,7 +257,7 @@ namespace LINQEntityBaseExample
         /// Gets/Sets the entities which have been deleted.
         /// (Data Contract Serialization Only)
         /// </summary>
-        [DataMember(Order = 5)]
+        [DataMember(Order = 8)]
         private List<LINQEntityBase> DeletedEntities
         {
             get
@@ -264,9 +306,34 @@ namespace LINQEntityBaseExample
             }
 
             FindImportantProperties();
-            BindToEntityEvents();  
+            BindToEntityEvents();            
         }
+        /// <summary>
+        /// Make a shallow copy of column values without copying references of the source entity
+        /// </summary>
+        /// <param name="source">the source entity that will have it's values copied</param>
+        /// <returns></returns>
+        private LINQEntityBase ShallowCopy(LINQEntityBase source)
+        {
+            PropertyInfo[] sourcePropInfos = source.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            PropertyInfo[] destinationPropInfos = source.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            
+            // create an object to copy values into
+            Type entityType = source.GetType();
+            LINQEntityBase destination;
+            destination = Activator.CreateInstance(entityType) as LINQEntityBase;
 
+            foreach (PropertyInfo sourcePropInfo in sourcePropInfos)
+            {
+                if (Attribute.GetCustomAttribute(sourcePropInfo, typeof(ColumnAttribute), false) != null)
+                {
+                    PropertyInfo destPropInfo = destinationPropInfos.Where(pi => pi.Name == sourcePropInfo.Name).First();
+                    destPropInfo.SetValue(destination, sourcePropInfo.GetValue(source, null), null);
+                }
+            }
+
+            return destination;
+        }
 
 
         #endregion private_members
@@ -293,12 +360,16 @@ namespace LINQEntityBaseExample
         /// <summary>
         /// Returns if the entity is new or not
         /// </summary>
+        [DataMember(Order = 2)]
         public bool IsNew
         {
             get
+            {                
+                return _isNew;
+            }
+            private set
             {
-                // If the timestamp is null then it's new.
-                return _entityVersionProperty.GetValue(this, null) == null;
+                _isNew = value;
             }
         }
 
@@ -306,7 +377,7 @@ namespace LINQEntityBaseExample
         /// Returns if the property is modified or allows caller to set if the
         /// object is modified.
         /// </summary> 
-        [DataMember(Order = 2)]
+        [DataMember(Order = 3)]
         public bool IsModified
         {
             get
@@ -326,7 +397,7 @@ namespace LINQEntityBaseExample
         /// <summary>
         /// Returns/Sets if the object has been marked for deletion.
         /// </summary>
-        [DataMember(Order = 3)]
+        [DataMember(Order = 4)]
         public bool IsDeleted
         {
             get
@@ -361,14 +432,22 @@ namespace LINQEntityBaseExample
             return entities;
         }
 
+        /// <summary>
+        /// Sets the current entity as the root for change tracking.        
+        /// By Default, original objects are not kept.
+        /// </summary>
+        public void SetAsChangeTrackingRoot()
+        {
+            SetAsChangeTrackingRoot(false);
+        }
 
         /// <summary>
         /// Sets the current entity as the root for change tracking.
         /// </summary>
-        public void SetAsChangeTrackingRoot()
+        public void SetAsChangeTrackingRoot(bool OnModifyKeepOriginal)
         {
             // Throw an exception if this object is already being change tracked
-            if (this._hasChangeTrackingRoot && this._changeTrackingReferences == null)
+            if (this.IsChangeTracked && this._changeTrackingReferences == null)
                 throw new ApplicationException("This object is already in a Change Tracking Tree and cannot be the root.");
 
             // This is the root object, so grab a list of all the references and keep for later.
@@ -376,7 +455,12 @@ namespace LINQEntityBaseExample
             _changeTrackingReferences = this._entityTree.ToList();
             foreach (LINQEntityBase entity in _changeTrackingReferences)
             {
-                entity.HasChangeTrackingRoot = true;
+                entity.IsChangeTracked = true;
+                entity.IsModified = false;
+                entity.IsDeleted = false;
+                entity.IsNew = false;
+                entity.OriginalEntityValue = null;
+                entity.IsKeepOriginal = OnModifyKeepOriginal;
             }
         }
 
@@ -412,11 +496,20 @@ namespace LINQEntityBaseExample
             foreach (LINQEntityBase entity in entities)
             {
                 if (!entity.IsNew && !entity.IsModified && !entity.IsDeleted)
+                {
                     targetDataContext.GetTable(entity.GetType()).Attach(entity, false);
+                }
                 else if (entity.IsNew)
+                {
                     targetDataContext.GetTable(entity.GetType()).InsertOnSubmit(entity);
+                }
                 else if (entity.IsModified)
-                    targetDataContext.GetTable(entity.GetType()).Attach(entity, true);
+                {
+                    if (this.IsKeepOriginal == true)
+                        targetDataContext.GetTable(entity.GetType()).Attach(entity, entity.OriginalEntityValue);
+                    else
+                        targetDataContext.GetTable(entity.GetType()).Attach(entity, true);
+                }
 
                 if (entity.IsDeleted)
                 {
@@ -445,7 +538,7 @@ namespace LINQEntityBaseExample
             }
 
             // Reset this entity as the change tracking root, getting a new copy of all objects
-            this.SetAsChangeTrackingRoot();
+            this.SetAsChangeTrackingRoot(this.IsKeepOriginal);
         }
 
         #endregion public_members

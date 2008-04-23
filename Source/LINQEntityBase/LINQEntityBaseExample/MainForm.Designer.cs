@@ -30,17 +30,18 @@
         {
             this.txtInfo = new System.Windows.Forms.TextBox();
             this.btnGo = new System.Windows.Forms.Button();
+            this.chkKeepOriginals = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // txtInfo
             // 
             this.txtInfo.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.txtInfo.Font = new System.Drawing.Font("Courier New", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtInfo.Location = new System.Drawing.Point(0, 29);
+            this.txtInfo.Location = new System.Drawing.Point(0, 46);
             this.txtInfo.Multiline = true;
             this.txtInfo.Name = "txtInfo";
             this.txtInfo.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.txtInfo.Size = new System.Drawing.Size(649, 536);
+            this.txtInfo.Size = new System.Drawing.Size(649, 519);
             this.txtInfo.TabIndex = 0;
             // 
             // btnGo
@@ -55,11 +56,24 @@
             this.btnGo.UseVisualStyleBackColor = true;
             this.btnGo.Click += new System.EventHandler(this.btnGo_Click);
             // 
+            // chkKeepOriginals
+            // 
+            this.chkKeepOriginals.AutoSize = true;
+            this.chkKeepOriginals.Dock = System.Windows.Forms.DockStyle.Top;
+            this.chkKeepOriginals.Location = new System.Drawing.Point(0, 23);
+            this.chkKeepOriginals.Name = "chkKeepOriginals";
+            this.chkKeepOriginals.Size = new System.Drawing.Size(649, 17);
+            this.chkKeepOriginals.TabIndex = 2;
+            this.chkKeepOriginals.Text = "Keep original values when modifications are made (reduces SQL Update statement si" +
+                "ze)";
+            this.chkKeepOriginals.UseVisualStyleBackColor = true;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(649, 565);
+            this.Controls.Add(this.chkKeepOriginals);
             this.Controls.Add(this.btnGo);
             this.Controls.Add(this.txtInfo);
             this.Name = "MainForm";
@@ -73,6 +87,7 @@
 
         private System.Windows.Forms.TextBox txtInfo;
         private System.Windows.Forms.Button btnGo;
+        private System.Windows.Forms.CheckBox chkKeepOriginals;
 
     }
 }

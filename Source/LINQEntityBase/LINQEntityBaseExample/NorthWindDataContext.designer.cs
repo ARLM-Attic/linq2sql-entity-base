@@ -125,8 +125,6 @@ namespace LINQEntityBaseExample
 		
 		private float _Discount;
 		
-		private System.Data.Linq.Binary _RowVersion;
-		
 		private EntityRef<Order> _Order;
 		
 		private EntityRef<Product> _Product;
@@ -145,8 +143,6 @@ namespace LINQEntityBaseExample
     partial void OnQuantityChanged();
     partial void OnDiscountChanging(float value);
     partial void OnDiscountChanged();
-    partial void OnRowVersionChanging(System.Data.Linq.Binary value);
-    partial void OnRowVersionChanged();
     #endregion
 		
 		public Order_Detail()
@@ -263,27 +259,6 @@ namespace LINQEntityBaseExample
 					this._Discount = value;
 					this.SendPropertyChanged("Discount");
 					this.OnDiscountChanged();
-				}
-			}
-		}
-		
-		[Column(Storage="_RowVersion", AutoSync=AutoSync.Always, DbType="rowversion NOT NULL", CanBeNull=false, IsDbGenerated=true, IsVersion=true, UpdateCheck=UpdateCheck.Never)]
-		[DataMember(Order=6)]
-		public System.Data.Linq.Binary RowVersion
-		{
-			get
-			{
-				return this._RowVersion;
-			}
-			set
-			{
-				if ((this._RowVersion != value))
-				{
-					this.OnRowVersionChanging(value);
-					this.SendPropertyChanging();
-					this._RowVersion = value;
-					this.SendPropertyChanged("RowVersion");
-					this.OnRowVersionChanged();
 				}
 			}
 		}
@@ -426,8 +401,6 @@ namespace LINQEntityBaseExample
 		
 		private string _ShipCountry;
 		
-		private System.Data.Linq.Binary _RowVersion;
-		
 		private EntitySet<Order_Detail> _Order_Details;
 		
 		private EntityRef<Customer> _Customer;
@@ -466,8 +439,6 @@ namespace LINQEntityBaseExample
     partial void OnShipPostalCodeChanged();
     partial void OnShipCountryChanging(string value);
     partial void OnShipCountryChanged();
-    partial void OnRowVersionChanging(System.Data.Linq.Binary value);
-    partial void OnRowVersionChanged();
     #endregion
 		
 		public Order()
@@ -773,29 +744,8 @@ namespace LINQEntityBaseExample
 			}
 		}
 		
-		[Column(Storage="_RowVersion", AutoSync=AutoSync.Always, DbType="rowversion NOT NULL", CanBeNull=false, IsDbGenerated=true, IsVersion=true, UpdateCheck=UpdateCheck.Never)]
-		[DataMember(Order=15)]
-		public System.Data.Linq.Binary RowVersion
-		{
-			get
-			{
-				return this._RowVersion;
-			}
-			set
-			{
-				if ((this._RowVersion != value))
-				{
-					this.OnRowVersionChanging(value);
-					this.SendPropertyChanging();
-					this._RowVersion = value;
-					this.SendPropertyChanged("RowVersion");
-					this.OnRowVersionChanged();
-				}
-			}
-		}
-		
 		[Association(Name="Order_Order_Detail", Storage="_Order_Details", OtherKey="OrderID")]
-		[DataMember(Order=16, EmitDefaultValue=false)]
+		[DataMember(Order=15, EmitDefaultValue=false)]
 		public EntitySet<Order_Detail> Order_Details
 		{
 			get
@@ -935,8 +885,6 @@ namespace LINQEntityBaseExample
 		
 		private bool _Discontinued;
 		
-		private System.Data.Linq.Binary _RowVersion;
-		
 		private EntityRef<Order_Detail> _Order_Details;
 		
 		private bool serializing;
@@ -965,8 +913,6 @@ namespace LINQEntityBaseExample
     partial void OnReorderLevelChanged();
     partial void OnDiscontinuedChanging(bool value);
     partial void OnDiscontinuedChanged();
-    partial void OnRowVersionChanging(System.Data.Linq.Binary value);
-    partial void OnRowVersionChanged();
     #endregion
 		
 		public Product()
@@ -1184,29 +1130,8 @@ namespace LINQEntityBaseExample
 			}
 		}
 		
-		[Column(Storage="_RowVersion", AutoSync=AutoSync.Always, DbType="rowversion NOT NULL", CanBeNull=false, IsDbGenerated=true, IsVersion=true, UpdateCheck=UpdateCheck.Never)]
-		[DataMember(Order=11)]
-		public System.Data.Linq.Binary RowVersion
-		{
-			get
-			{
-				return this._RowVersion;
-			}
-			set
-			{
-				if ((this._RowVersion != value))
-				{
-					this.OnRowVersionChanging(value);
-					this.SendPropertyChanging();
-					this._RowVersion = value;
-					this.SendPropertyChanged("RowVersion");
-					this.OnRowVersionChanged();
-				}
-			}
-		}
-		
 		[Association(Name="Product_Order_Detail", Storage="_Order_Details", ThisKey="ProductID", OtherKey="ProductID", IsUnique=true, IsForeignKey=false)]
-		[DataMember(Order=12, EmitDefaultValue=false)]
+		[DataMember(Order=11, EmitDefaultValue=false)]
 		public Order_Detail Order_Details
 		{
 			get
@@ -1317,8 +1242,6 @@ namespace LINQEntityBaseExample
 		
 		private string _Fax;
 		
-		private System.Data.Linq.Binary _RowVersion;
-		
 		private EntitySet<Order> _Orders;
 		
 		private bool serializing;
@@ -1349,8 +1272,6 @@ namespace LINQEntityBaseExample
     partial void OnPhoneChanged();
     partial void OnFaxChanging(string value);
     partial void OnFaxChanged();
-    partial void OnRowVersionChanging(System.Data.Linq.Binary value);
-    partial void OnRowVersionChanged();
     #endregion
 		
 		public Customer()
@@ -1589,29 +1510,8 @@ namespace LINQEntityBaseExample
 			}
 		}
 		
-		[Column(Storage="_RowVersion", AutoSync=AutoSync.Always, DbType="rowversion NOT NULL", CanBeNull=false, IsDbGenerated=true, IsVersion=true, UpdateCheck=UpdateCheck.Never)]
-		[DataMember(Order=12)]
-		public System.Data.Linq.Binary RowVersion
-		{
-			get
-			{
-				return this._RowVersion;
-			}
-			set
-			{
-				if ((this._RowVersion != value))
-				{
-					this.OnRowVersionChanging(value);
-					this.SendPropertyChanging();
-					this._RowVersion = value;
-					this.SendPropertyChanged("RowVersion");
-					this.OnRowVersionChanged();
-				}
-			}
-		}
-		
 		[Association(Name="Customer_Order", Storage="_Orders", OtherKey="CustomerID")]
-		[DataMember(Order=13, EmitDefaultValue=false)]
+		[DataMember(Order=12, EmitDefaultValue=false)]
 		public EntitySet<Order> Orders
 		{
 			get

@@ -76,7 +76,6 @@ namespace LINQEntityBaseExample
                 // as it is only referenced.
 
                 Customer customer;
-
                 StringWriter consoleOutput = new StringWriter();
                 Console.SetOut(consoleOutput);
 
@@ -118,15 +117,15 @@ namespace LINQEntityBaseExample
                 Console.WriteLine("-----------------------");
 
                 // Tell the root object it's doing the change tracking
-                customer.SetAsChangeTrackingRoot();
+                customer.SetAsChangeTrackingRoot(chkKeepOriginals.Checked);
 
                 /// WE ARE NOW DISCONNECTED ///
 
                 // Update Customer
                 string fax = customer.Fax;
                 string phone = customer.Phone;
-                customer.Fax = phone;
-                customer.Phone = fax;
+                customer.Fax = "Fax";
+                customer.Phone = "Phone";
                 Console.WriteLine("Modified {0} --> {1}", customer.LINQEntityGUID, customer.GetType().Name);
 
                 // Add an order record
@@ -218,7 +217,7 @@ namespace LINQEntityBaseExample
                 Console.WriteLine();
 
                 // serialize the customer to a string
-                string serialized = SerializeEntity(customer, new List<Type>() { typeof(Customer), typeof(Order), typeof(Order_Detail) });
+                string serialized = SerializeEntity(customer, new List<Type>() { typeof(Customer), typeof(Order), typeof(Order_Detail) });                
                 string bookmark = customer.LINQEntityGUID;
                 customer = null;
 
