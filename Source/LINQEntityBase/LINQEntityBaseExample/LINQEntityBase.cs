@@ -9,6 +9,7 @@ using System.ComponentModel;
 using System.Runtime.Serialization;
 using System.Reflection;
 
+
 namespace LINQEntityBaseExample
 {
     /// <summary>
@@ -25,7 +26,7 @@ namespace LINQEntityBaseExample
     /// Note, for this to work Child entities should have property a RowVersion/Timestamp field (can be named anything)
     /// </summary>    
     [DataContract()]
-    
+    [KnownType("GetKnownTypes")]
     public abstract class LINQEntityBase
     {
         #region constructor
@@ -279,6 +280,18 @@ namespace LINQEntityBaseExample
                 _changeTrackingReferences = value;
             }
         }
+
+        /// <summary>
+        /// Gets the list of Known Types
+        /// </summary>
+        /// <returns></returns>        
+        private static List<Type> GetKnownTypes()
+        {
+            return (from a in Assembly.GetExecutingAssembly().GetTypes()
+                   where a.IsSubclassOf(typeof(LINQEntityBase))
+                   select a).ToList();
+        }
+
 
         /// <summary>
         /// When starting deserialization, call this method to make sure that 

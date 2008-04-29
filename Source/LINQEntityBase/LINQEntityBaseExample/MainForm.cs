@@ -217,7 +217,7 @@ namespace LINQEntityBaseExample
                 Console.WriteLine();
 
                 // serialize the customer to a string
-                string serialized = SerializeEntity(customer, new List<Type>() { typeof(Customer), typeof(Order), typeof(Order_Detail) });                
+                string serialized = SerializeEntity(customer, null);                
                 string bookmark = customer.LINQEntityGUID;
                 customer = null;
 
@@ -233,7 +233,7 @@ namespace LINQEntityBaseExample
                 Customer deserialized;
 
                 // deserialize the customer string back into an object
-                deserialized = DeserializeEntity(serialized, typeof(Customer), new List<Type>() { typeof(Customer), typeof(Order), typeof(Order_Detail) }) as Customer;
+                deserialized = DeserializeEntity(serialized, typeof(Customer), null) as Customer;
                 customer = deserialized;
 
                 Console.WriteLine();
