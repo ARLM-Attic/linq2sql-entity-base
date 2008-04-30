@@ -394,15 +394,11 @@ namespace LINQEntityBaseExample
         public bool IsModified
         {
             get
-            {
-                // If it's been marked as modified, and it's not new then it's considered modified.
-                return _isModified == true && IsNew == false;
+            {                
+                return _isModified;
             }
-            set
+            private set
             {
-                // If the caller want's to specifically attempt to modify for
-                // some reason or we are re-hydrating the object from serialization
-                // allow _isModified to be set manually
                 _isModified = value;
             }
         }
@@ -455,17 +451,19 @@ namespace LINQEntityBaseExample
         }
 
         /// <summary>
-        /// Sets the current entity as the root for change tracking.
+        /// Sets the current entity as the root for change tracking and resets all the values of all entities.
         /// </summary>
         public void SetAsChangeTrackingRoot(bool OnModifyKeepOriginal)
         {
             // Throw an exception if this object is already being change tracked
             if (this.IsChangeTracked && this._changeTrackingReferences == null)
-                throw new ApplicationException("This object is already in a Change Tracking Tree and cannot be the root.");
+                throw new ApplicationException("This object is already being Change Tracked and cannot be the root.");
 
             // This is the root object, so grab a list of all the references and keep for later.
             // We need this, so that we can track entity deletions.
             _changeTrackingReferences = this._entityTree.ToList();
+
+            // Reset all the change tracked object states
             foreach (LINQEntityBase entity in _changeTrackingReferences)
             {
                 entity.IsChangeTracked = true;
