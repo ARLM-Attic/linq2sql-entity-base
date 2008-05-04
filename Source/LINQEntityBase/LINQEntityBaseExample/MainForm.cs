@@ -15,7 +15,6 @@ namespace LINQEntityBaseExample
 {
     public partial class MainForm : Form
     {
-        
         public MainForm()
         {
             InitializeComponent();
@@ -116,7 +115,7 @@ namespace LINQEntityBaseExample
                 Console.WriteLine("--    Modify Data    --");
                 Console.WriteLine("-----------------------");
 
-                // Tell the root object it's doing the change tracking
+                // Tell the root object it's doing the change tracking                              
                 customer.SetAsChangeTrackingRoot(chkKeepOriginals.Checked);
 
                 /// WE ARE NOW DISCONNECTED ///
@@ -185,7 +184,7 @@ namespace LINQEntityBaseExample
 
                 // Delete some orders (NOTE: it's using the flat list!)
                 List<Order> ordersDelete = (from o in customer.ToEntityTree().OfType<Order>()
-                                            where o.Freight < 20 && o.IsNew == false
+                                            where o.Freight < 20 && o.LINQEntityState != EntityState.New
                                             select o).ToList();
 
                 foreach (Order orderDeleted in ordersDelete)
@@ -199,13 +198,13 @@ namespace LINQEntityBaseExample
                 Console.WriteLine("--------------------------------");
                 foreach (LINQEntityBase entity in customer.ToEntityTree())
                 {
-                    if (entity.IsDeleted)
+                    if (entity.LINQEntityState == EntityState.Deleted)
                         Console.WriteLine("Deleted  {0} --> {1}", entity.LINQEntityGUID, entity.GetType().Name);
-                    if (entity.IsNew)
+                    if (entity.LINQEntityState == EntityState.New)
                         Console.WriteLine("Added    {0} --> {1}", entity.LINQEntityGUID, entity.GetType().Name);
-                    if (entity.IsModified)
+                    if (entity.LINQEntityState == EntityState.Modified)
                         Console.WriteLine("Modified {0} --> {1}", entity.LINQEntityGUID, entity.GetType().Name);
-                    if (!entity.IsDeleted && !entity.IsModified && !entity.IsNew)
+                    if (entity.LINQEntityState == EntityState.Original)
                         Console.WriteLine("Original {0} --> {1}", entity.LINQEntityGUID, entity.GetType().Name);
                 }
 
@@ -242,13 +241,13 @@ namespace LINQEntityBaseExample
                 Console.WriteLine("--------------------------------");
                 foreach (LINQEntityBase entity in customer.ToEntityTree())
                 {
-                    if (entity.IsDeleted)
+                    if (entity.LINQEntityState == EntityState.Deleted)
                         Console.WriteLine("Deleted  {0} --> {1}", entity.LINQEntityGUID, entity.GetType().Name);
-                    if (entity.IsNew)
+                    if (entity.LINQEntityState == EntityState.New)
                         Console.WriteLine("Added    {0} --> {1}", entity.LINQEntityGUID, entity.GetType().Name);
-                    if (entity.IsModified)
+                    if (entity.LINQEntityState == EntityState.Modified)
                         Console.WriteLine("Modified {0} --> {1}", entity.LINQEntityGUID, entity.GetType().Name);
-                    if (!entity.IsDeleted && !entity.IsModified && !entity.IsNew)
+                    if (entity.LINQEntityState == EntityState.Original)
                         Console.WriteLine("Original {0} --> {1}", entity.LINQEntityGUID, entity.GetType().Name);
                 }
 
@@ -261,7 +260,7 @@ namespace LINQEntityBaseExample
                     Console.WriteLine("--------------------------------");
 
                     db.DeferredLoadingEnabled = false;
-                    customer.SynchroniseWithDataContext(db, true);
+                    customer.SynchroniseWithDataContext(db, true); //cascade delete
                     db.Log = Console.Out;
                     db.SubmitChanges();
 
