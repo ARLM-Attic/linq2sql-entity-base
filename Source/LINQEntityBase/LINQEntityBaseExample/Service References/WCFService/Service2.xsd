@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:tns="http://schemas.datacontract.org/2004/07/LINQEntityBaseExampleData" elementFormDefault="qualified" targetNamespace="http://schemas.datacontract.org/2004/07/LINQEntityBaseExampleData" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:complexType name="Customer">
+    <xs:complexContent mixed="false">
+      <xs:extension base="tns:LINQEntityBase">
+        <xs:sequence>
+          <xs:element minOccurs="0" name="CustomerID" nillable="true" type="xs:string" />
+          <xs:element minOccurs="0" name="CompanyName" nillable="true" type="xs:string" />
+          <xs:element minOccurs="0" name="ContactName" nillable="true" type="xs:string" />
+          <xs:element minOccurs="0" name="ContactTitle" nillable="true" type="xs:string" />
+          <xs:element minOccurs="0" name="Address" nillable="true" type="xs:string" />
+          <xs:element minOccurs="0" name="City" nillable="true" type="xs:string" />
+          <xs:element minOccurs="0" name="Region" nillable="true" type="xs:string" />
+          <xs:element minOccurs="0" name="PostalCode" nillable="true" type="xs:string" />
+          <xs:element minOccurs="0" name="Country" nillable="true" type="xs:string" />
+          <xs:element minOccurs="0" name="Phone" nillable="true" type="xs:string" />
+          <xs:element minOccurs="0" name="Fax" nillable="true" type="xs:string" />
+          <xs:element minOccurs="0" name="Orders" nillable="true" type="tns:ArrayOfOrder">
+            <xs:annotation>
+              <xs:appinfo>
+                <DefaultValue EmitDefaultValue="false" xmlns="http://schemas.microsoft.com/2003/10/Serialization/" />
+              </xs:appinfo>
+            </xs:annotation>
+          </xs:element>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  <xs:element name="Customer" nillable="true" type="tns:Customer" />
+  <xs:complexType name="LINQEntityBase">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="LINQEntityGUID" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="LINQEntityState" type="tns:EntityState" />
+      <xs:element minOccurs="0" name="LINQEntityKeepOriginal" type="xs:boolean" />
+      <xs:element minOccurs="0" name="LINQEntityOriginalValue" nillable="true" type="tns:LINQEntityBase" />
+      <xs:element minOccurs="0" name="LINQEntityDeletedEntities" nillable="true" type="tns:ArrayOfLINQEntityBase" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="LINQEntityBase" nillable="true" type="tns:LINQEntityBase" />
+  <xs:simpleType name="EntityState">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="NotTracked" />
+      <xs:enumeration value="Original" />
+      <xs:enumeration value="New" />
+      <xs:enumeration value="Modified" />
+      <xs:enumeration value="Deleted" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="EntityState" nillable="true" type="tns:EntityState" />
+  <xs:complexType name="ArrayOfLINQEntityBase">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="LINQEntityBase" nillable="true" type="tns:LINQEntityBase" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ArrayOfLINQEntityBase" nillable="true" type="tns:ArrayOfLINQEntityBase" />
+  <xs:complexType name="Order_Detail">
+    <xs:complexContent mixed="false">
+      <xs:extension base="tns:LINQEntityBase">
+        <xs:sequence>
+          <xs:element minOccurs="0" name="OrderID" type="xs:int" />
+          <xs:element minOccurs="0" name="ProductID" type="xs:int" />
+          <xs:element minOccurs="0" name="UnitPrice" type="xs:decimal" />
+          <xs:element minOccurs="0" name="Quantity" type="xs:short" />
+          <xs:element minOccurs="0" name="Discount" type="xs:float" />
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  <xs:element name="Order_Detail" nillable="true" type="tns:Order_Detail" />
+  <xs:complexType name="Order">
+    <xs:complexContent mixed="false">
+      <xs:extension base="tns:LINQEntityBase">
+        <xs:sequence>
+          <xs:element minOccurs="0" name="OrderID" type="xs:int" />
+          <xs:element minOccurs="0" name="CustomerID" nillable="true" type="xs:string" />
+          <xs:element minOccurs="0" name="EmployeeID" nillable="true" type="xs:int" />
+          <xs:element minOccurs="0" name="OrderDate" nillable="true" type="xs:dateTime" />
+          <xs:element minOccurs="0" name="RequiredDate" nillable="true" type="xs:dateTime" />
+          <xs:element minOccurs="0" name="ShippedDate" nillable="true" type="xs:dateTime" />
+          <xs:element minOccurs="0" name="ShipVia" nillable="true" type="xs:int" />
+          <xs:element minOccurs="0" name="Freight" nillable="true" type="xs:decimal" />
+          <xs:element minOccurs="0" name="ShipName" nillable="true" type="xs:string" />
+          <xs:element minOccurs="0" name="ShipAddress" nillable="true" type="xs:string" />
+          <xs:element minOccurs="0" name="ShipCity" nillable="true" type="xs:string" />
+          <xs:element minOccurs="0" name="ShipRegion" nillable="true" type="xs:string" />
+          <xs:element minOccurs="0" name="ShipPostalCode" nillable="true" type="xs:string" />
+          <xs:element minOccurs="0" name="ShipCountry" nillable="true" type="xs:string" />
+          <xs:element minOccurs="0" name="Order_Details" nillable="true" type="tns:ArrayOfOrder_Detail">
+            <xs:annotation>
+              <xs:appinfo>
+                <DefaultValue EmitDefaultValue="false" xmlns="http://schemas.microsoft.com/2003/10/Serialization/" />
+              </xs:appinfo>
+            </xs:annotation>
+          </xs:element>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  <xs:element name="Order" nillable="true" type="tns:Order" />
+  <xs:complexType name="ArrayOfOrder_Detail">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="Order_Detail" nillable="true" type="tns:Order_Detail" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ArrayOfOrder_Detail" nillable="true" type="tns:ArrayOfOrder_Detail" />
+  <xs:complexType name="Product">
+    <xs:complexContent mixed="false">
+      <xs:extension base="tns:LINQEntityBase">
+        <xs:sequence>
+          <xs:element minOccurs="0" name="ProductID" type="xs:int" />
+          <xs:element minOccurs="0" name="ProductName" nillable="true" type="xs:string" />
+          <xs:element minOccurs="0" name="SupplierID" nillable="true" type="xs:int" />
+          <xs:element minOccurs="0" name="CategoryID" nillable="true" type="xs:int" />
+          <xs:element minOccurs="0" name="QuantityPerUnit" nillable="true" type="xs:string" />
+          <xs:element minOccurs="0" name="UnitPrice" nillable="true" type="xs:decimal" />
+          <xs:element minOccurs="0" name="UnitsInStock" nillable="true" type="xs:short" />
+          <xs:element minOccurs="0" name="UnitsOnOrder" nillable="true" type="xs:short" />
+          <xs:element minOccurs="0" name="ReorderLevel" nillable="true" type="xs:short" />
+          <xs:element minOccurs="0" name="Discontinued" type="xs:boolean" />
+          <xs:element minOccurs="0" name="Order_Details" nillable="true" type="tns:Order_Detail">
+            <xs:annotation>
+              <xs:appinfo>
+                <DefaultValue EmitDefaultValue="false" xmlns="http://schemas.microsoft.com/2003/10/Serialization/" />
+              </xs:appinfo>
+            </xs:annotation>
+          </xs:element>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  <xs:element name="Product" nillable="true" type="tns:Product" />
+  <xs:complexType name="ArrayOfOrder">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="Order" nillable="true" type="tns:Order" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ArrayOfOrder" nillable="true" type="tns:ArrayOfOrder" />
+</xs:schema>

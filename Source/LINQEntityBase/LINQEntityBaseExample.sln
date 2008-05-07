@@ -2,16 +2,29 @@
 Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LINQEntityBaseExample", "LINQEntityBaseExample\LINQEntityBaseExample.csproj", "{E4868F96-C1D6-446E-ADED-10A514D5DD0F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{783729C3-B800-4B3C-8355-938684F01698} = {783729C3-B800-4B3C-8355-938684F01698}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LINQEntityBaseExampleData", "LINQEntityBaseExampleData\LINQEntityBaseExampleData.csproj", "{683CD305-25B0-4BFC-AB41-565423CD45C0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LINQEntityBaseExampleWCFService", "LINQEntityBaseExampleWCFService\LINQEntityBaseExampleWCFService.csproj", "{783729C3-B800-4B3C-8355-938684F01698}"
 EndProject
 Global
 	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 2
+		SccNumberOfProjects = 4
 		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
 		SccTeamFoundationServer = https://tfs07.codeplex.com/
 		SccLocalPath0 = .
 		SccProjectUniqueName1 = LINQEntityBaseExample\\LINQEntityBaseExample.csproj
 		SccProjectName1 = LINQEntityBaseExample
 		SccLocalPath1 = LINQEntityBaseExample
+		SccProjectUniqueName2 = LINQEntityBaseExampleData\\LINQEntityBaseExampleData.csproj
+		SccProjectName2 = LINQEntityBaseExampleData
+		SccLocalPath2 = LINQEntityBaseExampleData
+		SccProjectUniqueName3 = LINQEntityBaseExampleWCFService\\LINQEntityBaseExampleWCFService.csproj
+		SccProjectName3 = LINQEntityBaseExampleWCFService
+		SccLocalPath3 = LINQEntityBaseExampleWCFService
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -22,6 +35,14 @@ Global
 		{E4868F96-C1D6-446E-ADED-10A514D5DD0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E4868F96-C1D6-446E-ADED-10A514D5DD0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E4868F96-C1D6-446E-ADED-10A514D5DD0F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{683CD305-25B0-4BFC-AB41-565423CD45C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{683CD305-25B0-4BFC-AB41-565423CD45C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{683CD305-25B0-4BFC-AB41-565423CD45C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{683CD305-25B0-4BFC-AB41-565423CD45C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{783729C3-B800-4B3C-8355-938684F01698}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{783729C3-B800-4B3C-8355-938684F01698}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{783729C3-B800-4B3C-8355-938684F01698}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{783729C3-B800-4B3C-8355-938684F01698}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

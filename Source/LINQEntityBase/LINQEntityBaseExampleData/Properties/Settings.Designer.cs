@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace LINQEntityBaseExample.Properties {
+namespace LINQEntityBaseExampleData.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
@@ -26,8 +26,8 @@ namespace LINQEntityBaseExample.Properties {
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.SpecialSettingAttribute(global::System.Configuration.SpecialSetting.ConnectionString)]
-        [global::System.Configuration.DefaultSettingValueAttribute("Data Source=.\\SQLEXPRESS;AttachDbFilename=|DataDirectory|\\Database\\NORTHWND_LOCAL" +
-            ".MDF;Integrated Security=True;User Instance=True")]
+        [global::System.Configuration.DefaultSettingValueAttribute("Data Source=.\\SQLEXPRESS;AttachDbFilename=|DataDirectory|\\Database\\NORTHWND.MDF;I" +
+            "ntegrated Security=True;User Instance=True")]
         public string NORTHWNDConnectionString {
             get {
                 return ((string)(this["NORTHWNDConnectionString"]));

@@ -26,21 +26,21 @@
         <elementListCompartment Id="340a75e8-3a64-40e9-858e-6a0b828da9c1" absoluteBounds="0.765, 1.71, 1.9700000000000002, 2.364705403645833" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
       </nestedChildShapes>
     </classShape>
-    <associationConnector edgePoints="[(5.5 : 2.63544840494792); (6.25 : 2.63544840494792)]" fixedFrom="Algorithm" fixedTo="Algorithm">
+    <associationConnector edgePoints="[(5.5 : 2.63544840494792); (6.25 : 2.63544840494792)]" fixedFrom="NotFixed" fixedTo="NotFixed">
       <AssociationMoniker Name="/NorthWindDataContext/Order/Order_Order_Detail" />
       <nodes>
         <classShapeMoniker Id="dc7b8da0-4a18-4a91-ae12-3d3c0fca27db" />
         <classShapeMoniker Id="671c4f51-1d30-4d37-9152-3d3c78d0adc9" />
       </nodes>
     </associationConnector>
-    <associationConnector edgePoints="[(5.5 : 6.74120198567708); (7.25 : 6.74120198567708); (7.25 : 3.52089680989583)]" fixedFrom="Algorithm" fixedTo="Algorithm">
+    <associationConnector edgePoints="[(5.5 : 6.74120198567708); (7.25 : 6.74120198567708); (7.25 : 3.52089680989583)]" fixedFrom="NotFixed" fixedTo="NotFixed">
       <AssociationMoniker Name="/NorthWindDataContext/Product/Product_Order_Detail" />
       <nodes>
         <classShapeMoniker Id="65e08c02-12f1-437b-842c-b540ccfa8283" />
         <classShapeMoniker Id="671c4f51-1d30-4d37-9152-3d3c78d0adc9" />
       </nodes>
     </associationConnector>
-    <associationConnector edgePoints="[(2.75 : 2.71235270182292); (3.5 : 2.71235270182292)]" fixedFrom="Algorithm" fixedTo="Algorithm">
+    <associationConnector edgePoints="[(2.75 : 2.71235270182292); (3.5 : 2.71235270182292)]" fixedFrom="NotFixed" fixedTo="NotFixed">
       <AssociationMoniker Name="/NorthWindDataContext/Customer/Customer_Order" />
       <nodes>
         <classShapeMoniker Id="ec2f609e-dc92-4d56-9bb4-d11239f52cee" />

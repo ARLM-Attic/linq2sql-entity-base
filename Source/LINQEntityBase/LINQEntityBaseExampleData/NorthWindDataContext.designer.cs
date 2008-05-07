@@ -9,7 +9,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace LINQEntityBaseExample
+namespace LINQEntityBaseExampleData
 {
 	using System.Data.Linq;
 	using System.Data.Linq.Mapping;
@@ -24,7 +24,7 @@ namespace LINQEntityBaseExample
 	
 	
 	[System.Data.Linq.Mapping.DatabaseAttribute(Name="NORTHWND")]
-	public partial class NorthWindDataContext : System.Data.Linq.DataContext
+	internal partial class NorthWindDataContext : System.Data.Linq.DataContext
 	{
 		
 		private static System.Data.Linq.Mapping.MappingSource mappingSource = new AttributeMappingSource();
@@ -46,7 +46,7 @@ namespace LINQEntityBaseExample
     #endregion
 		
 		public NorthWindDataContext() : 
-				base(global::LINQEntityBaseExample.Properties.Settings.Default.NORTHWNDConnectionString, mappingSource)
+				base(global::LINQEntityBaseExampleData.Properties.Settings.Default.NORTHWNDConnectionString, mappingSource)
 		{
 			OnCreated();
 		}
@@ -110,7 +110,7 @@ namespace LINQEntityBaseExample
 	
 	[Table(Name="dbo.[Order Details]")]
 	[DataContract()]
-	public partial class Order_Detail : LINQEntityBaseExample.LINQEntityBase, INotifyPropertyChanging, INotifyPropertyChanged
+	public partial class Order_Detail : LINQEntityBaseExampleData.LINQEntityBase, INotifyPropertyChanging, INotifyPropertyChanged
 	{
 		
 		private static PropertyChangingEventArgs emptyChangingEventArgs = new PropertyChangingEventArgs(String.Empty);
@@ -368,7 +368,7 @@ namespace LINQEntityBaseExample
 	
 	[Table(Name="dbo.Orders")]
 	[DataContract()]
-	public partial class Order : LINQEntityBaseExample.LINQEntityBase, INotifyPropertyChanging, INotifyPropertyChanged
+	public partial class Order : LINQEntityBaseExampleData.LINQEntityBase, INotifyPropertyChanging, INotifyPropertyChanged
 	{
 		
 		private static PropertyChangingEventArgs emptyChangingEventArgs = new PropertyChangingEventArgs(String.Empty);
@@ -860,7 +860,7 @@ namespace LINQEntityBaseExample
 	
 	[Table(Name="dbo.Products")]
 	[DataContract()]
-	public partial class Product : LINQEntityBaseExample.LINQEntityBase, INotifyPropertyChanging, INotifyPropertyChanged
+	public partial class Product : LINQEntityBaseExampleData.LINQEntityBase, INotifyPropertyChanging, INotifyPropertyChanged
 	{
 		
 		private static PropertyChangingEventArgs emptyChangingEventArgs = new PropertyChangingEventArgs(String.Empty);
@@ -1215,7 +1215,7 @@ namespace LINQEntityBaseExample
 	
 	[Table(Name="dbo.Customers")]
 	[DataContract()]
-	public partial class Customer : LINQEntityBaseExample.LINQEntityBase, INotifyPropertyChanging, INotifyPropertyChanged
+	public partial class Customer : LINQEntityBaseExampleData.LINQEntityBase, INotifyPropertyChanging, INotifyPropertyChanged
 	{
 		
 		private static PropertyChangingEventArgs emptyChangingEventArgs = new PropertyChangingEventArgs(String.Empty);
