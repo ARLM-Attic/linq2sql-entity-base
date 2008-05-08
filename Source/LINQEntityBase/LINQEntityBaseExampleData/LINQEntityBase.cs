@@ -3,12 +3,13 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Data.Linq;
 using System.Data.Linq.Mapping;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.ComponentModel;
 using System.Runtime.Serialization;
 using System.Reflection;
-
+using System.Xml;
 
 namespace LINQEntityBaseExampleData
 {
@@ -41,7 +42,6 @@ namespace LINQEntityBaseExampleData
     /// 
     /// e.g. EntityBase="LINQEntityBaseExample.LINQEntityBase"
     /// 
-    /// Note, for this to work Child entities should have property a RowVersion/Timestamp field (can be named anything)
     /// </summary>    
     [DataContract()]
     [KnownType("GetKnownTypes")]
@@ -272,18 +272,6 @@ namespace LINQEntityBaseExampleData
                 _changeTrackingReferences = value;
             }
         }
-
-        /// <summary>
-        /// Gets the list of Known Types
-        /// </summary>
-        /// <returns></returns>        
-        private static List<Type> GetKnownTypes()
-        {
-            return (from a in Assembly.GetExecutingAssembly().GetTypes()
-                   where a.IsSubclassOf(typeof(LINQEntityBase))
-                   select a).ToList();
-        }
-
 
         /// <summary>
         /// When starting deserialization, call this method to make sure that 
@@ -612,6 +600,69 @@ namespace LINQEntityBaseExampleData
         }
 
         #endregion
+
+        #region static_methods
+
+        /// <summary>
+        /// Gets the list of Known Types
+        /// </summary>
+        /// <returns></returns>        
+        private static List<Type> GetKnownTypes()
+        {
+            return (from a in Assembly.GetExecutingAssembly().GetTypes()
+                    where a.IsSubclassOf(typeof(LINQEntityBase))
+                    select a).ToList();
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Serializes a LINQ Entity and it's children using DataContract serializer
+        /// </summary>
+        /// <param name="EntitySource">The Entity to be serialized</param>
+        /// <param name="KnownTypes">Any Known Types. Pass in null if you're datacontext is in the same assembly as the LINQ to Entity Base</param>
+        /// <returns>An XML string representing the serialized entity</returns>
+        public static string SerializeEntity<T>(T entitySource, IEnumerable<Type> KnownTypes)
+        {
+            DataContractSerializer dcs;
+            if (KnownTypes == null)
+                dcs = new DataContractSerializer(entitySource.GetType());
+            else
+                dcs = new DataContractSerializer(entitySource.GetType(), KnownTypes);
+            if (entitySource == null)
+                return null;
+            StringBuilder sb = new StringBuilder();
+            XmlWriter xmlw = XmlWriter.Create(sb);
+            dcs.WriteObject(xmlw, entitySource);
+            xmlw.Close();
+            return sb.ToString();
+        }
+        
+        /// <summary>
+        /// Takes a serialized entity and re-hidrates it.
+        /// </summary>
+        /// <param name="EntitySource">The string containing the Serialized XML represnting the entity</param>
+        /// <param name="EntityType">The type of the entity being deserialized</param>
+        /// <param name="KnownTypes">Any Known Types. Pass in null if you're datacontext is in the same assembly as the LINQ to Entity Base</param>
+        /// <returns></returns>
+        public static object DeserializeEntity(string EntitySource, Type EntityType, IEnumerable<Type> KnownTypes)
+        {
+            DataContractSerializer dcs;
+
+            object entityTarget;
+            if (EntityType == null)
+                return null;
+
+            if (KnownTypes == null)
+                dcs = new DataContractSerializer(EntityType);
+            else
+                dcs = new DataContractSerializer(EntityType, KnownTypes);
+            StringReader sr = new StringReader(EntitySource);
+            XmlTextReader xmltr = new XmlTextReader(sr);
+            entityTarget = (object)dcs.ReadObject(xmltr);
+            xmltr.Close();
+            return entityTarget;
+        }
     }
 
 }

@@ -8,8 +8,6 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.Data.Linq;
-using System.Runtime.Serialization;
-using System.Xml;
 using LINQEntityBaseExampleData;
 
 namespace LINQEntityBaseExample
@@ -21,47 +19,12 @@ namespace LINQEntityBaseExample
             InitializeComponent();
         }
 
-        //public static string SerializeEntity<T>(T entitySource, IEnumerable<Type> KnownTypes)
-        //{
-        //    DataContractSerializer dcs;
-        //    if (KnownTypes == null)
-        //        dcs = new DataContractSerializer(entitySource.GetType());
-        //    else
-        //        dcs = new DataContractSerializer(entitySource.GetType(), KnownTypes);
-        //    if (entitySource == null)
-        //        return null;
-        //    StringBuilder sb = new StringBuilder();
-        //    XmlWriter xmlw = XmlWriter.Create(sb);
-        //    dcs.WriteObject(xmlw, entitySource);
-        //    xmlw.Close();
-        //    return sb.ToString();
-        //}
-
-        //public static object DeserializeEntity(string entitySource, Type entityType, IEnumerable<Type> KnownTypes)
-        //{
-        //    DataContractSerializer dcs;
-
-        //    object entityTarget;
-        //    if (entityType == null)
-        //        return null;
-
-        //    if (KnownTypes == null)
-        //        dcs = new DataContractSerializer(entityType);
-        //    else
-        //        dcs = new DataContractSerializer(entityType, KnownTypes);
-        //    StringReader sr = new StringReader(entitySource);
-        //    XmlTextReader xmltr = new XmlTextReader(sr);
-        //    entityTarget = (object)dcs.ReadObject(xmltr);
-        //    xmltr.Close();
-        //    return entityTarget;
-        //}
-
         private void btnGo_Click(object sender, EventArgs e)
         {
             try
             {
                 this.Cursor = Cursors.WaitCursor;
-                
+
                 // EXAMPLE: 
                 // 1. Detach From Original
                 // 2. Add/Modify
@@ -78,7 +41,7 @@ namespace LINQEntityBaseExample
                 Customer customer;
                 string DBLog = "";
                 WCFService.ServiceClient WCFDataService;
-                
+
                 StringWriter consoleOutput = new StringWriter();
                 Console.SetOut(consoleOutput);
 
@@ -185,33 +148,6 @@ namespace LINQEntityBaseExample
                     Console.WriteLine("Deleted  {0} --> {1}", orderDeleted.LINQEntityGUID, orderDeleted.GetType().Name);
                 }
 
-                //Console.WriteLine();
-                //Console.WriteLine("--------------------------------");
-                //Console.WriteLine("--         Serialize          --");
-                //Console.WriteLine("--(Simulate WCF Serialization)--");
-                //Console.WriteLine("--------------------------------");
-                //Console.WriteLine();
-
-                //// serialize the customer to a string
-                //string serialized = SerializeEntity(customer, null);                
-                //string bookmark = customer.LINQEntityGUID;
-                //customer = null;
-
-                //consoleOutput.WriteLine(serialized);
-
-                //Console.WriteLine();
-                //Console.WriteLine("----------------------------------");
-                //Console.WriteLine("--         Deserialize          --");
-                //Console.WriteLine("--(Simulate WCF Deserialization)--");
-                //Console.WriteLine("----------------------------------");
-                //Console.WriteLine();
-
-                //Customer deserialized;
-
-                //// deserialize the customer string back into an object
-                //deserialized = DeserializeEntity(serialized, typeof(Customer), null) as Customer;
-                //customer = deserialized;
-
                 Console.WriteLine();
                 Console.WriteLine("-----------------------");
                 Console.WriteLine("--    Review Data    --");
@@ -242,7 +178,7 @@ namespace LINQEntityBaseExample
                 Console.WriteLine("---------------------------------");
                 Console.WriteLine("--    GetData from Database    --");
                 Console.WriteLine("---------------------------------");
-                
+
                 // Get the customer data again from the database
                 DBLog = "";
                 customer = WCFDataService.RetrieveCustomerDataByID(out DBLog, "ALFKI");
