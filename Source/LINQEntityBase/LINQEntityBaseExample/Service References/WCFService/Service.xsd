@@ -30,4 +30,17 @@
       </xs:sequence>
     </xs:complexType>
   </xs:element>
+  <xs:element name="GetProductData">
+    <xs:complexType>
+      <xs:sequence />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GetProductDataResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element xmlns:q3="http://schemas.datacontract.org/2004/07/LINQEntityBaseExampleData" minOccurs="0" name="GetProductDataResult" nillable="true" type="q3:ArrayOfProduct" />
+        <xs:element minOccurs="0" name="DBLog" nillable="true" type="xs:string" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
 </xs:schema>

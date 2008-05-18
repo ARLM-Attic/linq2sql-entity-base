@@ -51,9 +51,13 @@ namespace LINQEntityBaseExample
 
                 //Get the customer and related children via WCF
                 WCFDataService = new WCFService.ServiceClient();
-                DBLog = "";
                 customer = WCFDataService.RetrieveCustomerDataByID(out DBLog, "ALFKI");
                 Console.WriteLine(DBLog);
+
+                List<Product> products = WCFDataService.GetProductData(out DBLog).ToList();
+                Console.WriteLine(DBLog);                
+
+
 
                 //Print out a list of original objects before modification
                 Console.WriteLine("-----------------------");
@@ -82,7 +86,7 @@ namespace LINQEntityBaseExample
                 customer.Phone = "Phone";
                 Console.WriteLine("Modified {0} --> {1}", customer.LINQEntityGUID, customer.GetType().Name);
 
-                // Add an order record
+                // Add an order record without children
                 Order orderAdded = new Order()
                 {
                     EmployeeID = 3,
@@ -103,7 +107,7 @@ namespace LINQEntityBaseExample
 
                 Console.WriteLine("Added    {0} --> {1}", orderAdded.LINQEntityGUID, orderAdded.GetType().Name);
 
-                // Add an order record
+                // Add an order record with child records
                 orderAdded = new Order()
                 {
                     EmployeeID = 3,
@@ -120,7 +124,20 @@ namespace LINQEntityBaseExample
                     ShipCountry = "USA"
                 };
 
+                // Add order details
+                Order_Detail order_DetailAdded = new Order_Detail()
+                {
+                    UnitPrice = 55,
+                    Quantity = 10,
+                    Discount = 0.15F
+                };
+
+                order_DetailAdded.Product = products.FirstOrDefault();
+
+                orderAdded.Order_Details.Add(order_DetailAdded);
+
                 Console.WriteLine("Added    {0} --> {1}", orderAdded.LINQEntityGUID, orderAdded.GetType().Name);
+                Console.WriteLine("Added    {0} --> {1}", order_DetailAdded.LINQEntityGUID, order_DetailAdded.GetType().Name);
 
                 customer.Orders.Add(orderAdded);
 

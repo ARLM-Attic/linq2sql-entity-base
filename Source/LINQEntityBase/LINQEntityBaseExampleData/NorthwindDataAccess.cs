@@ -21,7 +21,6 @@ namespace LINQEntityBaseExampleData
                 db.Log = log;
                 lo.LoadWith<Customer>(c => c.Orders);
                 lo.LoadWith<Order>(o => o.Order_Details);
-                lo.LoadWith<Order_Detail>(od => od.Product);
                 db.LoadOptions = lo;
                 db.DeferredLoadingEnabled = false;
                 customer = (from c in db.Customers
@@ -48,5 +47,29 @@ namespace LINQEntityBaseExampleData
                 DBLog = log.ToString();
             }
         }
+
+        public static List<Product> GetProductData(out string DBLog)
+        {
+            List<Product> products;
+
+            using (NorthWindDataContext db = new NorthWindDataContext())
+            {
+                
+                TextWriter log = new StringWriter();
+
+                db.Log = log;
+                db.DeferredLoadingEnabled = false;
+                products = (from p in db.Products
+                           select p).ToList();
+
+                DBLog = log.ToString();
+
+            }
+
+            return products;
+
+        }
+    
     }
+
 }

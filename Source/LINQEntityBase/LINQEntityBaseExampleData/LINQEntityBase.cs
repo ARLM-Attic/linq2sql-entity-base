@@ -168,7 +168,11 @@ namespace LINQEntityBaseExampleData
 
                             if (parentEntity.LINQEntityState != EntityState.NotTracked)
                             {
-                                this.LINQEntityState = EntityState.New;
+                                // loop through this entity and child entities and track them aswell
+                                foreach (LINQEntityBase entity in this.ToEntityTree())
+                                {
+                                    entity.LINQEntityState = EntityState.New;
+                                }
                             }
                         }
                     }
@@ -613,9 +617,7 @@ namespace LINQEntityBaseExampleData
                     where a.IsSubclassOf(typeof(LINQEntityBase))
                     select a).ToList();
         }
-
-        #endregion
-
+      
         /// <summary>
         /// Serializes a LINQ Entity and it's children using DataContract serializer
         /// </summary>
@@ -663,6 +665,8 @@ namespace LINQEntityBaseExampleData
             xmltr.Close();
             return entityTarget;
         }
+
+        #endregion
     }
 
 }

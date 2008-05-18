@@ -18,5 +18,7 @@ namespace LINQEntityBaseExampleWCFService
         [OperationContract]
         void UpdateCustomerData(Customer ModifiedCustomer, out string DBLog);
 
+        [OperationContract]
+        List<Product> GetProductData(out string DBLog);
     }
 }

@@ -19,5 +19,11 @@ namespace LINQEntityBaseExampleWCFService
         {
             NorthwindDataAccess.UpdateCustomerData(ModifiedCustomer, out DBLog);
         }
+
+        public List<Product> GetProductData(out string DBLog)
+        {
+            return NorthwindDataAccess.GetProductData(out DBLog);
+        }
+
     }
 }

@@ -21,6 +21,9 @@ namespace LINQEntityBaseExample.WCFService {
         [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IService/UpdateCustomerData", ReplyAction="http://tempuri.org/IService/UpdateCustomerDataResponse")]
         [return: System.ServiceModel.MessageParameterAttribute(Name="DBLog")]
         string UpdateCustomerData(LINQEntityBaseExampleData.Customer ModifiedCustomer);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://tempuri.org/IService/GetProductData", ReplyAction="http://tempuri.org/IService/GetProductDataResponse")]
+        LINQEntityBaseExampleData.Product[] GetProductData(out string DBLog);
     }
     
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "3.0.0.0")]
@@ -56,6 +59,10 @@ namespace LINQEntityBaseExample.WCFService {
         
         public string UpdateCustomerData(LINQEntityBaseExampleData.Customer ModifiedCustomer) {
             return base.Channel.UpdateCustomerData(ModifiedCustomer);
+        }
+        
+        public LINQEntityBaseExampleData.Product[] GetProductData(out string DBLog) {
+            return base.Channel.GetProductData(out DBLog);
         }
     }
 }

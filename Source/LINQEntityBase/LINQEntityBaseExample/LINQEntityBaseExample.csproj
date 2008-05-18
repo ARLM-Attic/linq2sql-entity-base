@@ -170,6 +170,7 @@
     <None Include="Service References\WCFService\configuration.svcinfo" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Properties\DataSources\LINQEntityBaseExampleData.Product.datasource" />
     <None Include="Service References\WCFService\Reference.svcmap">
       <Generator>WCF Proxy Generator</Generator>
       <LastGenOutput>Reference.cs</LastGenOutput>
