@@ -481,7 +481,7 @@ namespace LINQEntityBaseExampleData
             if (this._changeTrackingReferences == null)
                 throw new ApplicationException("You cannot syncronise an entity that is not the change tracking root");
 
-            List<LINQEntityBase> entities = this.ToEntityTree().ToList();          
+            List<LINQEntityBase> entities = this.ToEntityTree().Distinct().ToList();          
 
             foreach (LINQEntityBase entity in entities)
             {
