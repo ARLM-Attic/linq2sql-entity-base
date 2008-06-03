@@ -20,6 +20,7 @@ namespace LINQEntityBaseExampleData
     /// Original = persisted, but unmodified.
     /// New = Record to be inserted.
     /// Modified = Record to be updated.
+    /// Detached = Record is detached (modified)
     /// Deleted = Record to be deleted.
     /// </summary>
     public enum EntityState
@@ -28,6 +29,7 @@ namespace LINQEntityBaseExampleData
         Original,
         New,
         Modified,
+        Detached,
         Deleted,
     }
 
@@ -192,18 +194,19 @@ namespace LINQEntityBaseExampleData
                         {
                             if (_entityAssociationFKProperties.TryGetValue(e.PropertyName, out propInfo))
                             {
+                                // Parent FK has been set to null, object is now detached.
                                 if ((propInfo != null) && (propInfo.GetValue(this, null) == null))
                                 {
-                                    LINQEntityState = EntityState.Deleted;
+                                    LINQEntityState = EntityState.Detached;
                                 }
                             }
                         }
                         else
                         {
-                            // if the object isn't already modified
+                            // if the object isn't already modified or detached
                             // set it as modified
 
-                            if (LINQEntityState != EntityState.Modified)
+                            if (LINQEntityState != EntityState.Modified && LINQEntityState != EntityState.Detached)
                             {
                                 this._originalEntityValue = this._originalEntityValueTemp;                                
                                 LINQEntityState = EntityState.Modified;
@@ -249,20 +252,20 @@ namespace LINQEntityBaseExampleData
         }
 
         /// <summary>
-        /// Gets/Sets the entities which have been deleted.
+        /// Gets/Sets the entities which have been detached.
         /// (Data Contract Serialization Only)
         /// </summary>
         [DataMember(Order = 5)]
-        private List<LINQEntityBase> LINQEntityDeletedEntities
+        private List<LINQEntityBase> LINQEntityDetachedEntities
         {
             get
             {
-                // if in the root object, get all deleted records 
-                // except for root object if marked as deleted
+                // if in the root object, get all detached records 
+                // except for root object if marked as detached
                 if (_changeTrackingReferences != null)
                 {
                     List<LINQEntityBase> entities = new List<LINQEntityBase>();
-                    entities.AddRange(_changeTrackingReferences.Where(e => e.LINQEntityState == EntityState.Deleted && e != this));
+                    entities.AddRange(_changeTrackingReferences.Where(e => e.LINQEntityState == EntityState.Detached && e != this));
                     return entities;
                 }
                 else
@@ -382,7 +385,7 @@ namespace LINQEntityBaseExampleData
 
             if (_changeTrackingReferences != null)
             {
-                entities.AddRange(LINQEntityDeletedEntities);
+                entities.AddRange(LINQEntityDetachedEntities);
             }
 
             return entities;
@@ -428,10 +431,14 @@ namespace LINQEntityBaseExampleData
             // Throw an exception if this object is already being change tracked
             if (this.LINQEntityState != EntityState.NotTracked && this._changeTrackingReferences == null)
                 throw new ApplicationException("This entity is already being Change Tracked and cannot be the root.");
-            
-            // Throw an exception if "IsModified" is passed in - this is not allowed
+
+            // Throw an exception if "Modified" is passed in - this is not allowed
             if (initialEntityState == EntityState.Modified)
                 throw new ApplicationException("An Entity cannot be set as the Change Tracking Root whilst modified.  Instead, Set as Change Tracking root and then modify the entity.");
+
+            // Throw an exception if "Detached" is passed in - this is not allowed
+            if (initialEntityState == EntityState.Detached)
+                throw new ApplicationException("An Entity cannot be set as the Change Tracking Root whilst detached.");
 
             // This is the root object, so grab a list of all the references and keep for later.
             // We need this, so that we can track entity deletions.
@@ -482,6 +489,7 @@ namespace LINQEntityBaseExampleData
                 throw new ApplicationException("You cannot syncronise an entity that is not the change tracking root");
 
             List<LINQEntityBase> entities = this.ToEntityTree().Distinct().ToList();          
+            List<LINQEntityBase> entitiesDeleted = new List<LINQEntityBase>();
 
             foreach (LINQEntityBase entity in entities)
             {
@@ -493,15 +501,15 @@ namespace LINQEntityBaseExampleData
                 {
                     targetDataContext.GetTable(entity.GetType()).InsertOnSubmit(entity);
                 }
-                else if (entity.LINQEntityState == EntityState.Modified)
+                else if (entity.LINQEntityState == EntityState.Modified || entity.LINQEntityState == EntityState.Detached)
                 {
-                    if (this.LINQEntityKeepOriginal == true)
+                    if (entity.LINQEntityKeepOriginal == true && entity.LINQEntityOriginalValue != null)
                         targetDataContext.GetTable(entity.GetType()).Attach(entity, entity.LINQEntityOriginalValue);
                     else
                         targetDataContext.GetTable(entity.GetType()).Attach(entity, true);
                 }
 
-                if (entity.LINQEntityState == EntityState.Deleted)
+                if (entity.LINQEntityState == EntityState.Deleted && !entitiesDeleted.Contains(entity))
                 {
                     // Check to see if cascading deletes is allowed
                     if (cascadeDelete)
@@ -513,14 +521,18 @@ namespace LINQEntityBaseExampleData
                         // Cascade delete children and then this object
                         foreach (LINQEntityBase toDelete in entityTreeReversed)
                         {
+                            toDelete.SetAsDeleteOnSubmit();
                             targetDataContext.GetTable(toDelete.GetType()).Attach(toDelete);
                             targetDataContext.GetTable(toDelete.GetType()).DeleteOnSubmit(toDelete);
                         }
+                        //add these to a list to make sure we don't attach them twice.
+                        entitiesDeleted.AddRange(entityTreeReversed);
                     }
                     else
                     {
                         targetDataContext.GetTable(entity.GetType()).Attach(entity);
                         targetDataContext.GetTable(entity.GetType()).DeleteOnSubmit(entity);
+                        entitiesDeleted.Add(entity);
                     }
 
                     // if this is the root object, there's no need to do more processing 
@@ -533,6 +545,100 @@ namespace LINQEntityBaseExampleData
             // Reset this entity as the change tracking root, getting a new copy of all objects
             this.SetAsChangeTrackingRoot(this.LINQEntityKeepOriginal);
         }
+
+        /// <summary>
+        /// Set the entity to Inserted on Syncronisation with Database
+        /// </summary>
+        public void SetAsInsertOnSubmit()
+        {
+            if (this.LINQEntityState == EntityState.Detached)
+                throw new ApplicationException("You cannot change the Entity State from 'Detached' to 'New'");
+
+            if (this.LINQEntityState == EntityState.NotTracked)
+                throw new ApplicationException("You cannot change the Entity State when the Entity is not change tracked");
+
+
+            LINQEntityState = EntityState.New;
+        }
+
+        /// <summary>
+        /// Set the entity to not be changed on Syncronisation with Database.
+        /// Note, if Keep Original has been chosen when callined SetChangeTrackingRoot(),
+        /// and no existing original value exists, you must modify this entity after calling this method
+        /// otherwise no update will be made because original and modified 
+        /// versions of the entity will be the same.
+        /// </summary>
+        public void SetAsUpdateOnSubmit()
+        {
+            if (this._isKeepOriginal == true)
+                SetAsUpdateOnSubmit(true);
+            else
+                SetAsUpdateOnSubmit(false);
+        }
+
+        /// <summary>
+        /// Set the entity to Modifed on Syncronisation with Database.
+        /// </summary>
+        /// <param name="KeepOriginal">
+        /// Overrides the Keep Original value for this entity.
+        /// Passing in False removes any original value kept.
+        /// Passing in True looks for an existing original entity value, if non exists it creates one from the existing entity.</param>
+        /// When passing in true and no original entity value exists, you must modify this object after calling this method
+        /// otherwise no update will be made because original and modified 
+        /// versions of the entity will be the same.
+        public void SetAsUpdateOnSubmit(bool KeepOriginal)
+        {
+            if (this.LINQEntityState == EntityState.Detached)
+                throw new ApplicationException("You cannot change the Entity State from 'Detached' to 'Modified'");
+
+            if (this.LINQEntityState == EntityState.NotTracked)
+                throw new ApplicationException("You cannot change the Entity State when the Entity is not change tracked");
+
+            if (KeepOriginal == true)
+            {
+                //only take a snapshot if the entity state is not already modified.
+                if (this.LINQEntityState != EntityState.Modified && this._originalEntityValue == null)
+                {
+                    this._originalEntityValue = this.ShallowCopy(this);
+                }
+            }
+            else
+            {
+                this._originalEntityValue = null;
+            }
+
+            this.LINQEntityState = EntityState.Modified;
+        }
+
+        /// <summary>
+        /// Set the entity to Original, so that no change are comitted when syncronising with database.
+        /// </summary>        
+        public void SetAsNoChangeOnSubmit()
+        {
+            if (this.LINQEntityState == EntityState.Detached)
+                throw new ApplicationException("You cannot change the Entity State from 'Detached' to 'Original'");
+
+            if (this.LINQEntityState == EntityState.NotTracked)
+                throw new ApplicationException("You cannot change the Entity State when the Entity is not change tracked");
+           
+            this.LINQEntityState = EntityState.Original;
+        }
+
+        /// <summary>
+        /// Set the entity to Deleted on Syncronisation with Database
+        /// </summary>
+        public void SetAsDeleteOnSubmit()
+        {
+            if (this.LINQEntityState == EntityState.Detached)
+                throw new ApplicationException("You cannot modify the Entity State from 'Detached' to 'Delete' ");
+
+            if (this.LINQEntityState == EntityState.NotTracked)
+                throw new ApplicationException("You cannot change the Entity State when the Entity is not change tracked");
+            
+            this.LINQEntityState = EntityState.Deleted;
+        }
+
+     
 
         #endregion public_members
 

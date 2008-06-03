@@ -29,8 +29,7 @@ namespace LINQEntityBaseExample
                 // 1. Detach From Original
                 // 2. Add/Modify
                 // 3. Re-Attach to new DataContext + Commit
-                // 4. Delete Record, 
-                // 5. Re-Attach to new DataContext + Commit
+                // 4. Grab the end results from the database
 
                 // NOTES:
                 // Hierarchy is :
@@ -161,7 +160,7 @@ namespace LINQEntityBaseExample
 
                 foreach (Order orderDeleted in ordersDelete)
                 {
-                    customer.Orders.Remove(orderDeleted);
+                    orderDeleted.SetAsDeleteOnSubmit();
                     Console.WriteLine("Deleted  {0} --> {1}", orderDeleted.LINQEntityGUID, orderDeleted.GetType().Name);
                 }
 
@@ -173,6 +172,8 @@ namespace LINQEntityBaseExample
                 {
                     if (entity.LINQEntityState == EntityState.Deleted)
                         Console.WriteLine("Deleted  {0} --> {1}", entity.LINQEntityGUID, entity.GetType().Name);
+                    if (entity.LINQEntityState == EntityState.Detached)
+                        Console.WriteLine("Detached  {0} --> {1}", entity.LINQEntityGUID, entity.GetType().Name);
                     if (entity.LINQEntityState == EntityState.New)
                         Console.WriteLine("Added    {0} --> {1}", entity.LINQEntityGUID, entity.GetType().Name);
                     if (entity.LINQEntityState == EntityState.Modified)
@@ -188,6 +189,8 @@ namespace LINQEntityBaseExample
                 Console.WriteLine("---------------------------");
 
                 //Update the customer and related children via WCF
+                //(Note that on the server side, where database update is made
+                // cascading deletes = true)
                 DBLog = WCFDataService.UpdateCustomerData(customer);
                 Console.WriteLine(DBLog);
 
