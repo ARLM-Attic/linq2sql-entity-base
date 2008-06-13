@@ -141,7 +141,7 @@ namespace LINQEntityBaseExampleData
             // grab a copy of the object incase it's going to be modified
             if (this.LINQEntityState == EntityState.Original && LINQEntityKeepOriginal == true && LINQEntityOriginalValue == null)
             {
-                _originalEntityValueTemp = ShallowCopy(this);
+                _originalEntityValueTemp = LINQEntityBase.ShallowCopy(this);
             }
         }
 
@@ -308,32 +308,7 @@ namespace LINQEntityBaseExampleData
             FindImportantProperties();
             BindToEntityEvents();            
         }
-        /// <summary>
-        /// Make a shallow copy of column values without copying references of the source entity
-        /// </summary>
-        /// <param name="source">the source entity that will have it's values copied</param>
-        /// <returns></returns>
-        private LINQEntityBase ShallowCopy(LINQEntityBase source)
-        {
-            PropertyInfo[] sourcePropInfos = source.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            PropertyInfo[] destinationPropInfos = source.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            
-            // create an object to copy values into
-            Type entityType = source.GetType();
-            LINQEntityBase destination;
-            destination = Activator.CreateInstance(entityType) as LINQEntityBase;
 
-            foreach (PropertyInfo sourcePropInfo in sourcePropInfos)
-            {
-                if (Attribute.GetCustomAttribute(sourcePropInfo, typeof(ColumnAttribute), false) != null)
-                {
-                    PropertyInfo destPropInfo = destinationPropInfos.Where(pi => pi.Name == sourcePropInfo.Name).First();
-                    destPropInfo.SetValue(destination, sourcePropInfo.GetValue(source, null), null);
-                }
-            }
-
-            return destination;
-        }
 
 
         #endregion private_members
@@ -503,7 +478,7 @@ namespace LINQEntityBaseExampleData
                 }
                 else if (entity.LINQEntityState == EntityState.Modified || entity.LINQEntityState == EntityState.Detached)
                 {
-                    if (entity.LINQEntityKeepOriginal == true && entity.LINQEntityOriginalValue != null)
+                    if (entity.LINQEntityOriginalValue != null)
                         targetDataContext.GetTable(entity.GetType()).Attach(entity, entity.LINQEntityOriginalValue);
                     else
                         targetDataContext.GetTable(entity.GetType()).Attach(entity, true);
@@ -547,7 +522,28 @@ namespace LINQEntityBaseExampleData
         }
 
         /// <summary>
-        /// Set the entity to Inserted on Syncronisation with Database
+        /// Set the entity to be Inserted into the database
+        /// </summary>
+        /// <param name="ApplyToChildEntities">
+        /// Indicates whether all child objects are also marked to be inserted
+        /// </param>
+        public void SetAsInsertOnSubmit(bool ApplyToChildEntities)
+        {
+            if (ApplyToChildEntities == true)
+            {
+                foreach (LINQEntityBase entity in this.ToEntityTree().Distinct())
+                {
+                    entity.SetAsInsertOnSubmit();
+                }
+            }
+            else
+            {
+                this.SetAsInsertOnSubmit();
+            }
+        }
+
+        /// <summary>
+        /// Set the entity to be Inserted into the database
         /// </summary>
         public void SetAsInsertOnSubmit()
         {
@@ -561,32 +557,51 @@ namespace LINQEntityBaseExampleData
             LINQEntityState = EntityState.New;
         }
 
+
+
         /// <summary>
-        /// Set the entity to not be changed on Syncronisation with Database.
-        /// Note, if Keep Original has been chosen when callined SetChangeTrackingRoot(),
-        /// and no existing original value exists, you must modify this entity after calling this method
-        /// otherwise no update will be made because original and modified 
-        /// versions of the entity will be the same.
+        /// Indicates that the entity will Update the database.
+        /// If a snapshot of the original value of this entity already exists from a previous modification, the original value will be kept.
         /// </summary>
         public void SetAsUpdateOnSubmit()
         {
-            if (this._isKeepOriginal == true)
-                SetAsUpdateOnSubmit(true);
+            if (_originalEntityValue != null)
+                SetAsUpdateOnSubmit(_originalEntityValue);
             else
-                SetAsUpdateOnSubmit(false);
+                SetAsUpdateOnSubmit(null);
         }
 
         /// <summary>
-        /// Set the entity to Modifed on Syncronisation with Database.
+        /// Indicates that the entity will Update the database.
+        /// If a snapshot of the original value of this entity or any of it's children already exists from a previous modification, the original value will be kept
         /// </summary>
-        /// <param name="KeepOriginal">
-        /// Overrides the Keep Original value for this entity.
-        /// Passing in False removes any original value kept.
-        /// Passing in True looks for an existing original entity value, if non exists it creates one from the existing entity.</param>
-        /// When passing in true and no original entity value exists, you must modify this object after calling this method
-        /// otherwise no update will be made because original and modified 
-        /// versions of the entity will be the same.
-        public void SetAsUpdateOnSubmit(bool KeepOriginal)
+        /// <param name="ApplyToChildEntities">
+        /// Indicates whether all child entities are also marked to be updates
+        /// </param>
+        public void SetAsUpdateOnSubmit(bool ApplyToChildEntities)
+        {
+            if (ApplyToChildEntities == true)
+            {
+                foreach (LINQEntityBase entity in this.ToEntityTree().Distinct())
+                {
+                    entity.SetAsUpdateOnSubmit();
+                }
+            }
+            else
+            {
+                this.SetAsUpdateOnSubmit();
+            }
+        }
+
+        /// <summary>
+        /// Indicates that the entity will Update the database.
+        /// </summary>
+        /// <param name="OriginalValue">
+        /// Sets/Overrides the original value of the entity. 
+        /// The entity value passed in should be an earlier shallow copy of the entity.
+        /// This value can be set to null to indicate if the original entity value should be removed if it exists from a previous modification.
+        /// </param>
+        public void SetAsUpdateOnSubmit(LINQEntityBase OriginalValue)
         {
             if (this.LINQEntityState == EntityState.Detached)
                 throw new ApplicationException("You cannot change the Entity State from 'Detached' to 'Modified'");
@@ -594,24 +609,37 @@ namespace LINQEntityBaseExampleData
             if (this.LINQEntityState == EntityState.NotTracked)
                 throw new ApplicationException("You cannot change the Entity State when the Entity is not change tracked");
 
-            if (KeepOriginal == true)
-            {
-                //only take a snapshot if the entity state is not already modified.
-                if (this.LINQEntityState != EntityState.Modified && this._originalEntityValue == null)
-                {
-                    this._originalEntityValue = this.ShallowCopy(this);
-                }
-            }
+            if (OriginalValue != null)
+                this._originalEntityValue = LINQEntityBase.ShallowCopy(this);
             else
-            {
                 this._originalEntityValue = null;
-            }
 
             this.LINQEntityState = EntityState.Modified;
         }
 
         /// <summary>
-        /// Set the entity to Original, so that no change are comitted when syncronising with database.
+        /// Indicates that the entity will NOT modify the database.
+        /// </summary>
+        /// <param name="ApplyToChildEntities">
+        /// Indicates whether all child entities should be marked so that they do not modify the database.
+        /// </param>
+        public void SetAsNoChangeOnSubmit(bool ApplyToChildEntities)
+        {
+            if (ApplyToChildEntities == true)
+            {
+                foreach (LINQEntityBase entity in this.ToEntityTree().Distinct())
+                {
+                    entity.SetAsNoChangeOnSubmit();
+                }
+            }
+            else
+            {
+                this.SetAsNoChangeOnSubmit();
+            }
+        }
+
+        /// <summary>
+        /// Indicates that the entity will NOT modify the database.
         /// </summary>        
         public void SetAsNoChangeOnSubmit()
         {
@@ -625,6 +653,27 @@ namespace LINQEntityBaseExampleData
         }
 
         /// <summary>
+        /// Indicates that the entity should be deleted from the database.
+        /// </summary>
+        /// <param name="ApplyToChildEntities">
+        /// Indicates whether all child entities should be marked for deletion (cascade delete).
+        /// </param>
+        public void SetAsDeleteOnSubmit(bool ApplyToChildEntities)
+        {
+            if (ApplyToChildEntities == true)
+            {
+                foreach (LINQEntityBase entity in this.ToEntityTree().Distinct())
+                {
+                    entity.SetAsDeleteOnSubmit();
+                }
+            }
+            else
+            {
+                this.SetAsDeleteOnSubmit();
+            }
+        }
+
+        /// <summary>
         /// Set the entity to Deleted on Syncronisation with Database
         /// </summary>
         public void SetAsDeleteOnSubmit()
@@ -634,11 +683,9 @@ namespace LINQEntityBaseExampleData
 
             if (this.LINQEntityState == EntityState.NotTracked)
                 throw new ApplicationException("You cannot change the Entity State when the Entity is not change tracked");
-            
-            this.LINQEntityState = EntityState.Deleted;
-        }
 
-     
+            this.LINQEntityState = EntityState.Deleted;
+        }     
 
         #endregion public_members
 
@@ -770,6 +817,36 @@ namespace LINQEntityBaseExampleData
             entityTarget = (object)dcs.ReadObject(xmltr);
             xmltr.Close();
             return entityTarget;
+        }
+
+        /// <summary>
+        /// Make a shallow copy of column values without copying references of the source entity
+        /// </summary>
+        /// <param name="source">the source entity that will have it's values copied</param>
+        /// <returns></returns>
+        public static LINQEntityBase ShallowCopy(LINQEntityBase source)
+        {
+            PropertyInfo[] sourcePropInfos = source.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            PropertyInfo[] destinationPropInfos = source.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+            // create an object to copy values into
+            Type entityType = source.GetType();
+            LINQEntityBase destination;
+            destination = Activator.CreateInstance(entityType) as LINQEntityBase;
+
+            foreach (PropertyInfo sourcePropInfo in sourcePropInfos)
+            {
+                if (Attribute.GetCustomAttribute(sourcePropInfo, typeof(ColumnAttribute), false) != null)
+                {
+                    PropertyInfo destPropInfo = destinationPropInfos.Where(pi => pi.Name == sourcePropInfo.Name).First();
+                    destPropInfo.SetValue(destination, sourcePropInfo.GetValue(source, null), null);
+                }
+            }
+
+            destination.LINQEntityState = EntityState.Original;
+            destination.LINQEntityGUID = source.LINQEntityGUID;
+
+            return destination;
         }
 
         #endregion
