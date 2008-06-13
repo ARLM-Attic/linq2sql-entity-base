@@ -531,7 +531,7 @@ namespace LINQEntityBaseExampleData
         {
             if (ApplyToChildEntities == true)
             {
-                foreach (LINQEntityBase entity in this.ToEntityTree().Distinct())
+                foreach (LINQEntityBase entity in this.ToEntityTree().Distinct().ToList())
                 {
                     entity.SetAsInsertOnSubmit();
                 }
@@ -582,7 +582,7 @@ namespace LINQEntityBaseExampleData
         {
             if (ApplyToChildEntities == true)
             {
-                foreach (LINQEntityBase entity in this.ToEntityTree().Distinct())
+                foreach (LINQEntityBase entity in this.ToEntityTree().Distinct().ToList())
                 {
                     entity.SetAsUpdateOnSubmit();
                 }
@@ -627,7 +627,7 @@ namespace LINQEntityBaseExampleData
         {
             if (ApplyToChildEntities == true)
             {
-                foreach (LINQEntityBase entity in this.ToEntityTree().Distinct())
+                foreach (LINQEntityBase entity in this.ToEntityTree().Distinct().ToList())
                 {
                     entity.SetAsNoChangeOnSubmit();
                 }
@@ -662,7 +662,7 @@ namespace LINQEntityBaseExampleData
         {
             if (ApplyToChildEntities == true)
             {
-                foreach (LINQEntityBase entity in this.ToEntityTree().Distinct())
+                foreach (LINQEntityBase entity in this.ToEntityTree().Distinct().ToList())
                 {
                     entity.SetAsDeleteOnSubmit();
                 }
