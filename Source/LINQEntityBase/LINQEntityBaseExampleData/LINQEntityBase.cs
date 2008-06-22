@@ -93,15 +93,19 @@ namespace LINQEntityBaseExampleData
         private void BindToEntityEvents()
         {
             INotifyPropertyChanged childEntityChanged;
-            childEntityChanged = (INotifyPropertyChanged)this;
-
             INotifyPropertyChanging childEntityChanging;
-            childEntityChanging = (INotifyPropertyChanging)this;
+
+            childEntityChanged = this as INotifyPropertyChanged;
+            childEntityChanging = this as INotifyPropertyChanging;
 
             // bind the events, so when a property is changed the base class is aware of it.
-            childEntityChanged.PropertyChanged += new PropertyChangedEventHandler(PropertyChanged);
-            childEntityChanging.PropertyChanging += new PropertyChangingEventHandler(PropertyChanging);
-
+            // Note that when tables don't have a primary key, the don't implement these interfaces
+            // so if they can't be cast, then don't attempt to assign an event handler.
+            if (childEntityChanged != null && childEntityChanging != null)
+            {
+                childEntityChanged.PropertyChanged += new PropertyChangedEventHandler(PropertyChanged);
+                childEntityChanging.PropertyChanging += new PropertyChangingEventHandler(PropertyChanging);
+            }
             
         }
 
@@ -794,7 +798,7 @@ namespace LINQEntityBaseExampleData
         }
         
         /// <summary>
-        /// Takes a serialized entity and re-hidrates it.
+        /// Takes a serialized entity and re-hydrates it.
         /// </summary>
         /// <param name="EntitySource">The string containing the Serialized XML represnting the entity</param>
         /// <param name="EntityType">The type of the entity being deserialized</param>
