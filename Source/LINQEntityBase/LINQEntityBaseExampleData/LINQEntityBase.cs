@@ -171,8 +171,8 @@ namespace LINQEntityBaseExampleData
                         if (propInfo != null)
                         {
                             LINQEntityBase parentEntity = (LINQEntityBase)propInfo.GetValue(this, null);
-
-                            if (parentEntity.LINQEntityState != EntityState.NotTracked)
+                            
+                            if (parentEntity != null && parentEntity.LINQEntityState != EntityState.NotTracked)
                             {
                                 // loop through this entity and child entities and track them aswell
                                 foreach (LINQEntityBase entity in this.ToEntityTree())

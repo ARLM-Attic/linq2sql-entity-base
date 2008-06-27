@@ -72,9 +72,6 @@
   <ItemGroup>
     <Compile Include="LINQEntityBase.cs" />
     <Compile Include="NorthwindDataAccess.cs" />
-    <Compile Include="NorthWindDataContext.cs">
-      <DependentUpon>NorthWindDataContext.dbml</DependentUpon>
-    </Compile>
     <Compile Include="NorthWindDataContext.designer.cs">
       <DependentUpon>NorthWindDataContext.dbml</DependentUpon>
       <AutoGen>True</AutoGen>
