@@ -71,6 +71,7 @@ namespace LINQEntityBaseExampleData
 
             _entityAssociationProperties = new Dictionary<string, PropertyInfo>();
             _entityAssociationFKProperties = new Dictionary<string, PropertyInfo>();
+            _entityDbGeneratedProperties = new Dictionary<string, PropertyInfo>();
             _entityTree = new EntityTree(this, _entityAssociationProperties);
         }
 
@@ -83,6 +84,7 @@ namespace LINQEntityBaseExampleData
         private string _entityGUID; //a unique identifier for the entity       
         private Dictionary<string, PropertyInfo> _entityAssociationProperties; // stores the property info for associations
         private Dictionary<string, PropertyInfo> _entityAssociationFKProperties; // stores the property info for foreingKey associations
+        private Dictionary<string, PropertyInfo> _entityDbGeneratedProperties; // stores the property info for columns that are DbGenerated
         private EntityTree _entityTree; //used to hold the private class that allows entity Tree to be enumerated
         private List<LINQEntityBase> _changeTrackingReferences; //holds a list of all entities, regardless of their state for the purpose of tracking changes.
         private LINQEntityBase _originalEntityValue; // holds the original entity values before modification
@@ -115,6 +117,7 @@ namespace LINQEntityBaseExampleData
         private void FindImportantProperties()
         {            
             AssociationAttribute assocAttribute;
+            ColumnAttribute colAttribute;
 
             foreach (PropertyInfo propInfo in this.GetType().GetProperties())
             {
@@ -129,6 +132,16 @@ namespace LINQEntityBaseExampleData
                         _entityAssociationProperties.Add(propInfo.Name, propInfo);
                     else
                         _entityAssociationFKProperties.Add(propInfo.Name, propInfo);
+                }
+                else // check if its a column attribute second, less common
+                {
+                    colAttribute = Attribute.GetCustomAttribute(propInfo, typeof(ColumnAttribute), false) as ColumnAttribute;
+
+                    if (colAttribute != null && colAttribute.IsDbGenerated == true)
+                    {
+                        _entityDbGeneratedProperties.Add(propInfo.Name, propInfo);
+                        continue;
+                    }
                 }
             }
         }
@@ -207,9 +220,14 @@ namespace LINQEntityBaseExampleData
                         }
                         else
                         {
+                            // if a db generated column has been modified
+                            // do nothing
+                            bool isDbGenerated = _entityDbGeneratedProperties.TryGetValue(e.PropertyName, out propInfo);
+                            if (isDbGenerated)
+                                return;
+
                             // if the object isn't already modified or detached
                             // set it as modified
-
                             if (LINQEntityState != EntityState.Modified && LINQEntityState != EntityState.Detached)
                             {
                                 this._originalEntityValue = this._originalEntityValueTemp;                                
