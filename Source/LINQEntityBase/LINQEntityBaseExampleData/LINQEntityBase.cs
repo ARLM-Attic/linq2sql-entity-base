@@ -492,18 +492,18 @@ namespace LINQEntityBaseExampleData
             {
                 if (entity.LINQEntityState == EntityState.Original)
                 {
-                    targetDataContext.GetTable(entity.GetType()).Attach(entity, false);
+                    targetDataContext.GetTable(entity.GetEntityType()).Attach(entity, false);
                 }
                 else if (entity.LINQEntityState == EntityState.New)
                 {
-                    targetDataContext.GetTable(entity.GetType()).InsertOnSubmit(entity);
+                    targetDataContext.GetTable(entity.GetEntityType()).InsertOnSubmit(entity);
                 }
                 else if (entity.LINQEntityState == EntityState.Modified || entity.LINQEntityState == EntityState.Detached)
                 {
                     if (entity.LINQEntityOriginalValue != null)
-                        targetDataContext.GetTable(entity.GetType()).Attach(entity, entity.LINQEntityOriginalValue);
+                        targetDataContext.GetTable(entity.GetEntityType()).Attach(entity, entity.LINQEntityOriginalValue);
                     else
-                        targetDataContext.GetTable(entity.GetType()).Attach(entity, true);
+                        targetDataContext.GetTable(entity.GetEntityType()).Attach(entity, true);
                 }
 
                 if (entity.LINQEntityState == EntityState.Deleted && !entitiesDeleted.Contains(entity))
@@ -519,16 +519,16 @@ namespace LINQEntityBaseExampleData
                         foreach (LINQEntityBase toDelete in entityTreeReversed)
                         {
                             toDelete.SetAsDeleteOnSubmit();
-                            targetDataContext.GetTable(toDelete.GetType()).Attach(toDelete);
-                            targetDataContext.GetTable(toDelete.GetType()).DeleteOnSubmit(toDelete);
+                            targetDataContext.GetTable(toDelete.GetEntityType()).Attach(toDelete);
+                            targetDataContext.GetTable(toDelete.GetEntityType()).DeleteOnSubmit(toDelete);
                         }
                         //add these to a list to make sure we don't attach them twice.
                         entitiesDeleted.AddRange(entityTreeReversed);
                     }
                     else
                     {
-                        targetDataContext.GetTable(entity.GetType()).Attach(entity);
-                        targetDataContext.GetTable(entity.GetType()).DeleteOnSubmit(entity);
+                        targetDataContext.GetTable(entity.GetEntityType()).Attach(entity);
+                        targetDataContext.GetTable(entity.GetEntityType()).DeleteOnSubmit(entity);
                         entitiesDeleted.Add(entity);
                     }
 
@@ -707,7 +707,27 @@ namespace LINQEntityBaseExampleData
                 throw new ApplicationException("You cannot change the Entity State when the Entity is not change tracked");
 
             this.LINQEntityState = EntityState.Deleted;
-        }     
+        }
+
+        /// <summary>
+        /// Finds the Entity Type of the current object by find the class marked with the TableAttribute
+        /// </summary>
+        /// <returns></returns>
+        public Type GetEntityType()
+        {
+            Type type = this.GetType();
+            TableAttribute tableAttribute = (TableAttribute)Attribute.GetCustomAttribute(type,typeof(TableAttribute),false);
+
+            while(tableAttribute == null && type != typeof(LINQEntityBase))
+            {
+                type = type.BaseType;
+                tableAttribute = (TableAttribute)Attribute.GetCustomAttribute(type,typeof(TableAttribute),false);
+            }
+            
+            return type;
+
+        }
+
 
         #endregion public_members
 
