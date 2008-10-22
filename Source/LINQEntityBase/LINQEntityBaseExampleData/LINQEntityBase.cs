@@ -45,7 +45,7 @@ namespace LINQEntityBaseExampleData
     /// e.g. EntityBase="LINQEntityBaseExample.LINQEntityBase"
     /// 
     /// </summary>    
-    [DataContract()]
+    [DataContract(IsReference=true)]
     [KnownType("GetKnownTypes")]
     public abstract class LINQEntityBase
     {
@@ -518,17 +518,27 @@ namespace LINQEntityBaseExampleData
                         // Cascade delete children and then this object
                         foreach (LINQEntityBase toDelete in entityTreeReversed)
                         {
-                            toDelete.SetAsDeleteOnSubmit();
-                            targetDataContext.GetTable(toDelete.GetEntityType()).Attach(toDelete);
-                            targetDataContext.GetTable(toDelete.GetEntityType()).DeleteOnSubmit(toDelete);
+                            // Before we try and delete, make sure the entity hasn't been marked to be deleted already
+                            // through another relationship linkng this entity in the same sub-tree that is being deleted.
+                            if (!entitiesDeleted.Contains(toDelete))
+                            {
+                                // Mark for deletion
+                                toDelete.SetAsDeleteOnSubmit();
+                                targetDataContext.GetTable(toDelete.GetEntityType()).Attach(toDelete);
+                                targetDataContext.GetTable(toDelete.GetEntityType()).DeleteOnSubmit(toDelete);
+
+                                //add deleted entity to a list to make sure we don't delete them twice.
+                                entitiesDeleted.Add(toDelete);
+                            }
                         }
-                        //add these to a list to make sure we don't attach them twice.
-                        entitiesDeleted.AddRange(entityTreeReversed);
                     }
                     else
                     {
+                        // Mark for deletion
                         targetDataContext.GetTable(entity.GetEntityType()).Attach(entity);
                         targetDataContext.GetTable(entity.GetEntityType()).DeleteOnSubmit(entity);
+                        
+                        //add deleted entity to a list to make sure we don't delete them twice.
                         entitiesDeleted.Add(entity);
                     }
 
