@@ -66,6 +66,7 @@ namespace LINQEntityBaseExampleData
 
         private void Init()
         {
+            _isRoot = false;
             _entityState = EntityState.NotTracked;
             _isKeepOriginal = false;
 
@@ -79,6 +80,7 @@ namespace LINQEntityBaseExampleData
 
         #region private_members
 
+        private bool _isRoot;
         private EntityState _entityState; //returns the current entity state
         private bool _isKeepOriginal; //indicates if the original record before modifications should be kept for use when syncing with DataContext later on.
         private string _entityGUID; //a unique identifier for the entity       
@@ -216,6 +218,11 @@ namespace LINQEntityBaseExampleData
                                 {
                                     LINQEntityState = EntityState.Detached;
                                 }
+                                else if (LINQEntityState != EntityState.Modified && LINQEntityState != EntityState.Detached)
+                                {
+                                    this._originalEntityValue = this._originalEntityValueTemp; 
+                                    LINQEntityState = EntityState.Modified;
+                                }
                             }
                         }
                         else
@@ -303,6 +310,27 @@ namespace LINQEntityBaseExampleData
         }
 
         /// <summary>
+        /// For serialization purposes, returns null if false (so it doesn't take up space in xml)
+        /// Or true if this object is the root.
+        /// </summary>
+        [DataMember(Order = 6)]
+        private bool? IsRoot
+        {
+            get
+            {
+                bool? temp = null;
+                return (_isRoot) ? true : temp; 
+            }
+            set
+            { 
+                if(value == null)
+                    _isRoot = false;
+                else
+                    _isRoot = value.Value;
+            }
+        }
+
+        /// <summary>
         /// When starting deserialization, call this method to make sure that 
         /// private variables are setup.
         /// </summary>
@@ -320,15 +348,33 @@ namespace LINQEntityBaseExampleData
         [OnDeserialized()]
         private void AfterDeserialized(System.Runtime.Serialization.StreamingContext sc)
         {
-            // if it's the root, _changeTrackingReferences will contain deleted references
-            // and we need to build a complete list of all objects - not just the deleted ones
-            if(_changeTrackingReferences != null)
-            {
-                _changeTrackingReferences = this.ToEntityTree();
-            }
+            //// if it's the root, _changeTrackingReferences will contain deleted references
+            //// and we need to build a complete list of all objects - not just the deleted ones
+            //if(_changeTrackingReferences != null)
+            //{
+                
+            //}
 
             FindImportantProperties();
-            BindToEntityEvents();            
+            
+            // If it's not tracked, bind the property now
+            // Else check if it is tracked and it's the root entity
+            // Then walk through the entity tree and bind all child attributes
+            // And set the changetracking references
+            if (this.LINQEntityState == EntityState.NotTracked)
+            {
+                BindToEntityEvents();
+            }
+            else if(this.IsRoot == true)
+            {
+                _changeTrackingReferences = this.ToEntityTree();
+
+                // Grab important properties and bind to events.
+                foreach (LINQEntityBase entity in _changeTrackingReferences)
+                {
+                    entity.BindToEntityEvents();
+                }
+            }
         }
 
 
@@ -440,6 +486,7 @@ namespace LINQEntityBaseExampleData
             // This is the root object, so grab a list of all the references and keep for later.
             // We need this, so that we can track entity deletions.
             _changeTrackingReferences = this._entityTree.ToList();
+            _isRoot = true;
 
             // Reset all the change tracked object states
             foreach (LINQEntityBase entity in _changeTrackingReferences)
