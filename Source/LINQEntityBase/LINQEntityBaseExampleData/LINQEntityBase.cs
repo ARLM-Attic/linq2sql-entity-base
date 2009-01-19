@@ -291,7 +291,7 @@ namespace LINQEntityBaseExampleData
             {
                 // if in the root object, get all detached records 
                 // except for root object if marked as detached
-                if (_changeTrackingReferences != null)
+                if (this.IsRoot == true)
                 {
                     List<LINQEntityBase> entities = new List<LINQEntityBase>();
                     entities.AddRange(_changeTrackingReferences.Where(e => e.LINQEntityState == EntityState.Detached && e != this));
@@ -348,13 +348,7 @@ namespace LINQEntityBaseExampleData
         [OnDeserialized()]
         private void AfterDeserialized(System.Runtime.Serialization.StreamingContext sc)
         {
-            //// if it's the root, _changeTrackingReferences will contain deleted references
-            //// and we need to build a complete list of all objects - not just the deleted ones
-            //if(_changeTrackingReferences != null)
-            //{
-                
-            //}
-
+            // Grab the important properties first
             FindImportantProperties();
             
             // If it's not tracked, bind the property now
@@ -367,13 +361,18 @@ namespace LINQEntityBaseExampleData
             }
             else if(this.IsRoot == true)
             {
+                // Set the change tracking references to the value which 
+                // ToEntityTree() returns, which will inlcude not only the 
+                // entity tree, but the detached entities as well.
                 _changeTrackingReferences = this.ToEntityTree();
 
-                // Grab important properties and bind to events.
+                // Bind to events for every entity in the tree, doing this only as
+                // the very last step of deserialization because we don't want
+                // any of the events to accidentally fire while deserializing.
                 foreach (LINQEntityBase entity in _changeTrackingReferences)
                 {
                     entity.BindToEntityEvents();
-                }
+                }            
             }
         }
 
@@ -426,7 +425,7 @@ namespace LINQEntityBaseExampleData
             entities = (from t in _entityTree                    
                        select t).ToList();
 
-            if (_changeTrackingReferences != null)
+            if (this.IsRoot == true)
             {
                 entities.AddRange(LINQEntityDetachedEntities);
             }
@@ -472,7 +471,7 @@ namespace LINQEntityBaseExampleData
         public void SetAsChangeTrackingRoot(EntityState initialEntityState, bool onModifyKeepOriginal)
         {
             // Throw an exception if this object is already being change tracked
-            if (this.LINQEntityState != EntityState.NotTracked && this._changeTrackingReferences == null)
+            if (this.LINQEntityState != EntityState.NotTracked && this.IsRoot == false)
                 throw new ApplicationException("This entity is already being Change Tracked and cannot be the root.");
 
             // Throw an exception if "Modified" is passed in - this is not allowed
@@ -529,7 +528,7 @@ namespace LINQEntityBaseExampleData
                 throw new ApplicationException("Syncronisation requires that the Deferred loading is disabled on the Target DataContext");
 
             // Also Make sure this entity is the change tracking root
-            if (this._changeTrackingReferences == null)
+            if (this.IsRoot == false)
                 throw new ApplicationException("You cannot syncronise an entity that is not the change tracking root");
 
             List<LINQEntityBase> entities = this.ToEntityTree().Distinct().ToList();          
