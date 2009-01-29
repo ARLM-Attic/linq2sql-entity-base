@@ -31,6 +31,7 @@ namespace LINQEntityBaseExampleData
         Modified,
         Detached,
         Deleted,
+        CancelNew
     }
 
     /// <summary>
@@ -66,6 +67,7 @@ namespace LINQEntityBaseExampleData
 
         private void Init()
         {
+            _isSyncronisingWithDB = false;
             _isRoot = false;
             _entityState = EntityState.NotTracked;
             _isKeepOriginal = false;
@@ -80,7 +82,8 @@ namespace LINQEntityBaseExampleData
 
         #region private_members
 
-        private bool _isRoot;
+        private bool _isSyncronisingWithDB;
+        private bool _isRoot; // indicates if the entity is the root of the entity tree
         private EntityState _entityState; //returns the current entity state
         private bool _isKeepOriginal; //indicates if the original record before modifications should be kept for use when syncing with DataContext later on.
         private string _entityGUID; //a unique identifier for the entity       
@@ -156,6 +159,16 @@ namespace LINQEntityBaseExampleData
         /// <param name="e">Property Changing arguements</param>
         private void PropertyChanging(object sender, PropertyChangingEventArgs e)
         {
+            // Ignore events if syncronising with DB
+            if (_isSyncronisingWithDB == true)
+                return;
+
+            // Do a check here to make sure that the entity is not change if it is supposed to be deleted
+            if (this.LINQEntityState == EntityState.Deleted || this.LINQEntityState == EntityState.CancelNew)
+            {
+                throw new ApplicationException("You cannot modify a deleted entity");
+            }
+
             // If it's a change tracked object thats in "Original" state
             // grab a copy of the object incase it's going to be modified
             if (this.LINQEntityState == EntityState.Original && LINQEntityKeepOriginal == true && LINQEntityOriginalValue == null)
@@ -171,6 +184,11 @@ namespace LINQEntityBaseExampleData
         /// <param name="e">Property Changed arguements</param>
         private void PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
+
+            // Ignore events if syncronising with DB
+            if (_isSyncronisingWithDB == true)
+                return;
+
             PropertyInfo propInfo = null;
 
             // if this object isn't change tracked yet, but it's parent
@@ -531,72 +549,107 @@ namespace LINQEntityBaseExampleData
             if (this.IsRoot == false)
                 throw new ApplicationException("You cannot syncronise an entity that is not the change tracking root");
 
-            List<LINQEntityBase> entities = this.ToEntityTree().Distinct().ToList();          
+            List<LINQEntityBase> entities = this.ToEntityTree().Distinct().ToList();
             List<LINQEntityBase> entitiesDeleted = new List<LINQEntityBase>();
 
-            foreach (LINQEntityBase entity in entities)
-            {
-                if (entity.LINQEntityState == EntityState.Original)
+            try
+            {               
+
+                // Tell each entity that syncronisation is occuring
+                foreach (LINQEntityBase entity in entities)
                 {
-                    targetDataContext.GetTable(entity.GetEntityType()).Attach(entity, false);
-                }
-                else if (entity.LINQEntityState == EntityState.New)
-                {
-                    targetDataContext.GetTable(entity.GetEntityType()).InsertOnSubmit(entity);
-                }
-                else if (entity.LINQEntityState == EntityState.Modified || entity.LINQEntityState == EntityState.Detached)
-                {
-                    if (entity.LINQEntityOriginalValue != null)
-                        targetDataContext.GetTable(entity.GetEntityType()).Attach(entity, entity.LINQEntityOriginalValue);
-                    else
-                        targetDataContext.GetTable(entity.GetEntityType()).Attach(entity, true);
+                    entity._isSyncronisingWithDB = true;
                 }
 
-                if (entity.LINQEntityState == EntityState.Deleted && !entitiesDeleted.Contains(entity))
+                // For entities which have been Cancelled (Added as new then deleted before submission to DB)
+                // detach these entities by removing it's references so that they can be garbage collected.
+
+                foreach (LINQEntityBase entity in entities)
                 {
-                    // Check to see if cascading deletes is allowed
-                    if (cascadeDelete)
+                    if (entity.LINQEntityState == EntityState.CancelNew)
                     {
-                        // Grab the entity tree and reverse it so that this entity is deleted last
-                        List<LINQEntityBase> entityTreeReversed = entity.ToEntityTree();
-                        entityTreeReversed.Reverse();
-
-                        // Cascade delete children and then this object
-                        foreach (LINQEntityBase toDelete in entityTreeReversed)
+                        foreach (PropertyInfo propInfo in entity._entityAssociationFKProperties.Values)
                         {
-                            // Before we try and delete, make sure the entity hasn't been marked to be deleted already
-                            // through another relationship linkng this entity in the same sub-tree that is being deleted.
-                            if (!entitiesDeleted.Contains(toDelete))
-                            {
-                                // Mark for deletion
-                                toDelete.SetAsDeleteOnSubmit();
-                                targetDataContext.GetTable(toDelete.GetEntityType()).Attach(toDelete);
-                                targetDataContext.GetTable(toDelete.GetEntityType()).DeleteOnSubmit(toDelete);
-
-                                //add deleted entity to a list to make sure we don't delete them twice.
-                                entitiesDeleted.Add(toDelete);
-                            }
+                            propInfo.SetValue(entity, null, null);
                         }
                     }
-                    else
+                }
+
+                // Loop through all the entities, attaching as appropriate to the data context
+
+                foreach (LINQEntityBase entity in entities)
+                {
+                    if (entity.LINQEntityState == EntityState.Original)
                     {
-                        // Mark for deletion
-                        targetDataContext.GetTable(entity.GetEntityType()).Attach(entity);
-                        targetDataContext.GetTable(entity.GetEntityType()).DeleteOnSubmit(entity);
-                        
-                        //add deleted entity to a list to make sure we don't delete them twice.
-                        entitiesDeleted.Add(entity);
+                        targetDataContext.GetTable(entity.GetEntityType()).Attach(entity, false);
+                    }
+                    else if (entity.LINQEntityState == EntityState.New)
+                    {
+                        targetDataContext.GetTable(entity.GetEntityType()).InsertOnSubmit(entity);
+                    }
+                    else if (entity.LINQEntityState == EntityState.Modified || entity.LINQEntityState == EntityState.Detached)
+                    {
+                        if (entity.LINQEntityOriginalValue != null)
+                            targetDataContext.GetTable(entity.GetEntityType()).Attach(entity, entity.LINQEntityOriginalValue);
+                        else
+                            targetDataContext.GetTable(entity.GetEntityType()).Attach(entity, true);
                     }
 
-                    // if this is the root object, there's no need to do more processing 
-                    // so just quit the loop
-                    if (this == entity)
-                        break;                    
+                    if (entity.LINQEntityState == EntityState.Deleted && !entitiesDeleted.Contains(entity))
+                    {
+                        // Check to see if cascading deletes is allowed
+                        if (cascadeDelete)
+                        {
+                            // Grab the entity tree and reverse it so that this entity is deleted last
+                            List<LINQEntityBase> entityTreeReversed = entity.ToEntityTree();
+                            entityTreeReversed.Reverse();
+
+                            // Cascade delete children and then this object
+                            foreach (LINQEntityBase toDelete in entityTreeReversed)
+                            {
+                                // Before we try and delete, make sure the entity hasn't been marked to be deleted already
+                                // through another relationship linkng this entity in the same sub-tree that is being deleted.
+                                if (!entitiesDeleted.Contains(toDelete))
+                                {
+                                    // Mark for deletion
+                                    toDelete.SetAsDeleteOnSubmit();
+                                    targetDataContext.GetTable(toDelete.GetEntityType()).Attach(toDelete);
+                                    targetDataContext.GetTable(toDelete.GetEntityType()).DeleteOnSubmit(toDelete);
+
+                                    //add deleted entity to a list to make sure we don't delete them twice.
+                                    entitiesDeleted.Add(toDelete);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // Mark for deletion
+                            targetDataContext.GetTable(entity.GetEntityType()).Attach(entity);
+                            targetDataContext.GetTable(entity.GetEntityType()).DeleteOnSubmit(entity);
+
+                            //add deleted entity to a list to make sure we don't delete them twice.
+                            entitiesDeleted.Add(entity);
+                        }
+
+                        // if this is the root object, there's no need to do more processing 
+                        // so just quit the loop
+                        if (this == entity)
+                            break;
+                    }
+                }
+
+                // Reset this entity as the change tracking root, getting a new copy of all objects
+                this.SetAsChangeTrackingRoot(this.LINQEntityKeepOriginal);
+
+            }
+            finally
+            {
+                // Tell each entity that syncronisation is occuring
+                foreach (LINQEntityBase entity in entities)
+                {
+                    entity._isSyncronisingWithDB = false;
                 }
             }
-
-            // Reset this entity as the change tracking root, getting a new copy of all objects
-            this.SetAsChangeTrackingRoot(this.LINQEntityKeepOriginal);
         }
 
         /// <summary>
@@ -762,7 +815,11 @@ namespace LINQEntityBaseExampleData
             if (this.LINQEntityState == EntityState.NotTracked)
                 throw new ApplicationException("You cannot change the Entity State when the Entity is not change tracked");
 
-            this.LINQEntityState = EntityState.Deleted;
+            if (this.LINQEntityState == EntityState.New)
+                this.LINQEntityState = EntityState.CancelNew;
+            else
+                this.LINQEntityState = EntityState.Deleted;
+
         }
 
         /// <summary>
