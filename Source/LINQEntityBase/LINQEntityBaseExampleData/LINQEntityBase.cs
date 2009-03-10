@@ -50,6 +50,171 @@ namespace LINQEntityBaseExampleData
     [KnownType("GetKnownTypes")]
     public abstract class LINQEntityBase
     {
+
+        #region static_constructor
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        static LINQEntityBase()
+        {
+            // Get the Important LINQ entity properties
+            GetImportantProperties();
+        }
+
+        #endregion static_constructor
+
+        #region static_variables
+
+        // Static array variables that contains all property information                
+        static private Dictionary<string, Dictionary<string, PropertyInfo>> _cacheAssociationProperties; // stores the property info for associations
+        static private Dictionary<string, Dictionary<string, PropertyInfo>> _cacheAssociationFKProperties; // stores the property info for foreingKey associations
+        static private Dictionary<string, Dictionary<string, PropertyInfo>> _cacheDBGeneratedProperties; // stores the property info for columns that are DbGenerated
+
+        #endregion static_variables
+
+        #region static_methods
+
+        /// <summary>
+        /// Gets the list of Known Types
+        /// </summary>
+        /// <returns></returns>        
+        private static List<Type> GetKnownTypes()
+        {
+            return (from a in Assembly.GetExecutingAssembly().GetTypes()
+                    where a.IsSubclassOf(typeof(LINQEntityBase))
+                    select a).ToList();
+        }
+
+        /// <summary>
+        /// Serializes a LINQ Entity and it's children using DataContract serializer
+        /// </summary>
+        /// <param name="EntitySource">The Entity to be serialized</param>
+        /// <param name="KnownTypes">Any Known Types. Pass in null if you're datacontext is in the same assembly as the LINQ to Entity Base</param>
+        /// <returns>An XML string representing the serialized entity</returns>
+        public static string SerializeEntity<T>(T entitySource, IEnumerable<Type> KnownTypes)
+        {
+            DataContractSerializer dcs;
+            if (KnownTypes == null)
+                dcs = new DataContractSerializer(entitySource.GetType());
+            else
+                dcs = new DataContractSerializer(entitySource.GetType(), KnownTypes);
+            if (entitySource == null)
+                return null;
+            StringBuilder sb = new StringBuilder();
+            XmlWriter xmlw = XmlWriter.Create(sb);
+            dcs.WriteObject(xmlw, entitySource);
+            xmlw.Close();
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Takes a serialized entity and re-hydrates it.
+        /// </summary>
+        /// <param name="EntitySource">The string containing the Serialized XML represnting the entity</param>
+        /// <param name="EntityType">The type of the entity being deserialized</param>
+        /// <param name="KnownTypes">Any Known Types. Pass in null if you're datacontext is in the same assembly as the LINQ to Entity Base</param>
+        /// <returns></returns>
+        public static object DeserializeEntity(string EntitySource, Type EntityType, IEnumerable<Type> KnownTypes)
+        {
+            DataContractSerializer dcs;
+
+            object entityTarget;
+            if (EntityType == null)
+                return null;
+
+            if (KnownTypes == null)
+                dcs = new DataContractSerializer(EntityType);
+            else
+                dcs = new DataContractSerializer(EntityType, KnownTypes);
+            StringReader sr = new StringReader(EntitySource);
+            XmlTextReader xmltr = new XmlTextReader(sr);
+            entityTarget = (object)dcs.ReadObject(xmltr);
+            xmltr.Close();
+            return entityTarget;
+        }
+
+        /// <summary>
+        /// Make a shallow copy of column values without copying references of the source entity
+        /// </summary>
+        /// <param name="source">the source entity that will have it's values copied</param>
+        /// <returns></returns>
+        public static LINQEntityBase ShallowCopy(LINQEntityBase source)
+        {
+            PropertyInfo[] sourcePropInfos = source.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            PropertyInfo[] destinationPropInfos = source.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+            // create an object to copy values into
+            Type entityType = source.GetType();
+            LINQEntityBase destination;
+            destination = Activator.CreateInstance(entityType) as LINQEntityBase;
+
+            foreach (PropertyInfo sourcePropInfo in sourcePropInfos)
+            {
+                if (Attribute.GetCustomAttribute(sourcePropInfo, typeof(ColumnAttribute), false) != null)
+                {
+                    PropertyInfo destPropInfo = destinationPropInfos.Where(pi => pi.Name == sourcePropInfo.Name).First();
+                    destPropInfo.SetValue(destination, sourcePropInfo.GetValue(source, null), null);
+                }
+            }
+
+            destination.LINQEntityState = EntityState.Original;
+            destination.LINQEntityGUID = source.LINQEntityGUID;
+
+            return destination;
+        }
+
+        /// <summary>
+        /// Loops through the available properties on the class and finds associated, FK and database generated properties,
+        /// putting them into a cache to be used later.
+        /// </summary>
+        static private void GetImportantProperties()
+        {
+            AssociationAttribute assocAttribute;
+            ColumnAttribute colAttribute;
+
+            _cacheAssociationProperties = new Dictionary<string, Dictionary<string, PropertyInfo>>(); ;
+            _cacheAssociationFKProperties = new Dictionary<string, Dictionary<string, PropertyInfo>>(); ;
+            _cacheDBGeneratedProperties = new Dictionary<string, Dictionary<string, PropertyInfo>>(); ;
+
+            foreach (Type type in GetKnownTypes())
+            {
+                _cacheAssociationProperties.Add(type.FullName, new Dictionary<string, PropertyInfo>());
+                _cacheAssociationFKProperties.Add(type.FullName, new Dictionary<string, PropertyInfo>());
+                _cacheDBGeneratedProperties.Add(type.FullName, new Dictionary<string, PropertyInfo>());
+
+                foreach (PropertyInfo propInfo in type.GetProperties())
+                {
+                    // check it's an association attribute first
+                    assocAttribute = (AssociationAttribute)Attribute.GetCustomAttribute(propInfo, typeof(AssociationAttribute), false);
+
+                    // if it is an association attribute
+                    if (assocAttribute != null)
+                    {
+                        // Store the FK relationships seperately (i.e. child to parent relationships);
+                        if (assocAttribute.IsForeignKey != true)
+                            _cacheAssociationProperties[type.FullName].Add(propInfo.Name, propInfo);
+                        else
+                            _cacheAssociationFKProperties[type.FullName].Add(propInfo.Name, propInfo);
+                    }
+                    else // check if its a column attribute second, less common
+                    {
+                        colAttribute = Attribute.GetCustomAttribute(propInfo, typeof(ColumnAttribute), false) as ColumnAttribute;
+
+                        if (colAttribute != null && colAttribute.IsDbGenerated == true)
+                        {
+                            _cacheDBGeneratedProperties[type.FullName].Add(propInfo.Name, propInfo);
+                            continue;
+                        }
+                    }
+                }
+
+            }
+        }
+
+
+        #endregion
+
         #region constructor
 
         /// <summary>
@@ -60,10 +225,9 @@ namespace LINQEntityBaseExampleData
             _entityGUID = Guid.NewGuid().ToString(); //a unique identifier for the entity
 
             Init();
-            FindImportantProperties();
             BindToEntityEvents();           
-
         }
+
 
         private void Init()
         {
@@ -72,10 +236,7 @@ namespace LINQEntityBaseExampleData
             _entityState = EntityState.NotTracked;
             _isKeepOriginal = false;
 
-            _entityAssociationProperties = new Dictionary<string, PropertyInfo>();
-            _entityAssociationFKProperties = new Dictionary<string, PropertyInfo>();
-            _entityDbGeneratedProperties = new Dictionary<string, PropertyInfo>();
-            _entityTree = new EntityTree(this, _entityAssociationProperties);
+            _entityTree = new EntityTree(this, _cacheAssociationProperties[this.GetType().FullName]);
         }
 
         #endregion constructor
@@ -87,13 +248,11 @@ namespace LINQEntityBaseExampleData
         private EntityState _entityState; //returns the current entity state
         private bool _isKeepOriginal; //indicates if the original record before modifications should be kept for use when syncing with DataContext later on.
         private string _entityGUID; //a unique identifier for the entity       
-        private Dictionary<string, PropertyInfo> _entityAssociationProperties; // stores the property info for associations
-        private Dictionary<string, PropertyInfo> _entityAssociationFKProperties; // stores the property info for foreingKey associations
-        private Dictionary<string, PropertyInfo> _entityDbGeneratedProperties; // stores the property info for columns that are DbGenerated
         private EntityTree _entityTree; //used to hold the private class that allows entity Tree to be enumerated
         private List<LINQEntityBase> _changeTrackingReferences; //holds a list of all entities, regardless of their state for the purpose of tracking changes.
         private LINQEntityBase _originalEntityValue; // holds the original entity values before modification
         private LINQEntityBase _originalEntityValueTemp; // temporarily holds the original entity value until we no it's a true modification.
+
         /// <summary>
         /// This method binds to the events of the entity that are required.
         /// </summary>
@@ -116,40 +275,6 @@ namespace LINQEntityBaseExampleData
             
         }
 
-        /// <summary>
-        /// Loops through the available properties on the class and gets the rowVersion and association properties
-        /// </summary>
-        private void FindImportantProperties()
-        {            
-            AssociationAttribute assocAttribute;
-            ColumnAttribute colAttribute;
-
-            foreach (PropertyInfo propInfo in this.GetType().GetProperties())
-            {
-                // check it's an association attribute first
-                assocAttribute = (AssociationAttribute)Attribute.GetCustomAttribute(propInfo, typeof(AssociationAttribute), false);
-
-                // if it is an association attribute
-                if (assocAttribute != null)
-                {
-                    // Store the FK relationships seperately (i.e. child to parent relationships);
-                    if (assocAttribute.IsForeignKey != true)
-                        _entityAssociationProperties.Add(propInfo.Name, propInfo);
-                    else
-                        _entityAssociationFKProperties.Add(propInfo.Name, propInfo);
-                }
-                else // check if its a column attribute second, less common
-                {
-                    colAttribute = Attribute.GetCustomAttribute(propInfo, typeof(ColumnAttribute), false) as ColumnAttribute;
-
-                    if (colAttribute != null && colAttribute.IsDbGenerated == true)
-                    {
-                        _entityDbGeneratedProperties.Add(propInfo.Name, propInfo);
-                        continue;
-                    }
-                }
-            }
-        }
 
 
         /// <summary>
@@ -197,9 +322,9 @@ namespace LINQEntityBaseExampleData
             {
                 // Check to see if the parent object is change tracked
                 // If there is, set the new flag, and tell this new object it's tracked
-                if (_entityAssociationFKProperties.ContainsKey(e.PropertyName))
+                if (_cacheAssociationFKProperties[this.GetType().FullName].ContainsKey(e.PropertyName))
                 {
-                    if (_entityAssociationFKProperties.TryGetValue(e.PropertyName, out propInfo))
+                    if (_cacheAssociationFKProperties[this.GetType().FullName].TryGetValue(e.PropertyName, out propInfo))
                     {
                         if (propInfo != null)
                         {
@@ -225,11 +350,11 @@ namespace LINQEntityBaseExampleData
                 // only go into this section if it's change tracked
                 if (this.LINQEntityState != EntityState.NotTracked)
                 {
-                    if (!_entityAssociationProperties.ContainsKey(e.PropertyName))
+                    if (!_cacheAssociationProperties[this.GetType().FullName].ContainsKey(e.PropertyName))
                     {
-                        if (_entityAssociationFKProperties.ContainsKey(e.PropertyName))
+                        if (_cacheAssociationFKProperties[this.GetType().FullName].ContainsKey(e.PropertyName))
                         {
-                            if (_entityAssociationFKProperties.TryGetValue(e.PropertyName, out propInfo))
+                            if (_cacheAssociationFKProperties[this.GetType().FullName].TryGetValue(e.PropertyName, out propInfo))
                             {
                                 // Parent FK has been set to null, object is now detached.
                                 if ((propInfo != null) && (propInfo.GetValue(this, null) == null))
@@ -247,7 +372,7 @@ namespace LINQEntityBaseExampleData
                         {
                             // if a db generated column has been modified
                             // do nothing
-                            bool isDbGenerated = _entityDbGeneratedProperties.TryGetValue(e.PropertyName, out propInfo);
+                            bool isDbGenerated = _cacheDBGeneratedProperties[this.GetType().FullName].TryGetValue(e.PropertyName, out propInfo);
                             if (isDbGenerated)
                                 return;
 
@@ -367,7 +492,7 @@ namespace LINQEntityBaseExampleData
         private void AfterDeserialized(System.Runtime.Serialization.StreamingContext sc)
         {
             // Grab the important properties first
-            FindImportantProperties();
+            // FindImportantProperties();
             
             // If it's not tracked, bind the property now
             // Else check if it is tracked and it's the root entity
@@ -394,7 +519,23 @@ namespace LINQEntityBaseExampleData
             }
         }
 
+        // Gets an Association Property from the cache
+        private bool GetAssociationProperty(string propName, out PropertyInfo propInfo)
+        {
+            return _cacheAssociationProperties[this.GetType().FullName].TryGetValue(propName, out propInfo);
+        }
 
+        // Gets an FK Association Property from the cache
+        private bool GetAssociationFKProperty(string propName, out PropertyInfo propInfo)
+        {
+            return _cacheAssociationFKProperties[this.GetType().FullName].TryGetValue(propName, out propInfo);
+        }
+
+        // Gets a Database Generate Property from the cache
+        private bool GetDbGeneratedProperty(string propName, out PropertyInfo propInfo)
+        {
+            return _cacheDBGeneratedProperties[this.GetType().FullName].TryGetValue(propName, out propInfo);
+        }
 
         #endregion private_members
         
@@ -568,7 +709,7 @@ namespace LINQEntityBaseExampleData
                 {
                     if (entity.LINQEntityState == EntityState.CancelNew)
                     {
-                        foreach (PropertyInfo propInfo in entity._entityAssociationFKProperties.Values)
+                        foreach (PropertyInfo propInfo in _cacheAssociationFKProperties[entity.GetType().FullName].Values)
                         {
                             propInfo.SetValue(entity, null, null);
                         }
@@ -913,98 +1054,6 @@ namespace LINQEntityBaseExampleData
 
         #endregion
 
-        #region static_methods
-
-        /// <summary>
-        /// Gets the list of Known Types
-        /// </summary>
-        /// <returns></returns>        
-        private static List<Type> GetKnownTypes()
-        {
-            return (from a in Assembly.GetExecutingAssembly().GetTypes()
-                    where a.IsSubclassOf(typeof(LINQEntityBase))
-                    select a).ToList();
-        }
-      
-        /// <summary>
-        /// Serializes a LINQ Entity and it's children using DataContract serializer
-        /// </summary>
-        /// <param name="EntitySource">The Entity to be serialized</param>
-        /// <param name="KnownTypes">Any Known Types. Pass in null if you're datacontext is in the same assembly as the LINQ to Entity Base</param>
-        /// <returns>An XML string representing the serialized entity</returns>
-        public static string SerializeEntity<T>(T entitySource, IEnumerable<Type> KnownTypes)
-        {
-            DataContractSerializer dcs;
-            if (KnownTypes == null)
-                dcs = new DataContractSerializer(entitySource.GetType());
-            else
-                dcs = new DataContractSerializer(entitySource.GetType(), KnownTypes);
-            if (entitySource == null)
-                return null;
-            StringBuilder sb = new StringBuilder();
-            XmlWriter xmlw = XmlWriter.Create(sb);
-            dcs.WriteObject(xmlw, entitySource);
-            xmlw.Close();
-            return sb.ToString();
-        }
-        
-        /// <summary>
-        /// Takes a serialized entity and re-hydrates it.
-        /// </summary>
-        /// <param name="EntitySource">The string containing the Serialized XML represnting the entity</param>
-        /// <param name="EntityType">The type of the entity being deserialized</param>
-        /// <param name="KnownTypes">Any Known Types. Pass in null if you're datacontext is in the same assembly as the LINQ to Entity Base</param>
-        /// <returns></returns>
-        public static object DeserializeEntity(string EntitySource, Type EntityType, IEnumerable<Type> KnownTypes)
-        {
-            DataContractSerializer dcs;
-
-            object entityTarget;
-            if (EntityType == null)
-                return null;
-
-            if (KnownTypes == null)
-                dcs = new DataContractSerializer(EntityType);
-            else
-                dcs = new DataContractSerializer(EntityType, KnownTypes);
-            StringReader sr = new StringReader(EntitySource);
-            XmlTextReader xmltr = new XmlTextReader(sr);
-            entityTarget = (object)dcs.ReadObject(xmltr);
-            xmltr.Close();
-            return entityTarget;
-        }
-
-        /// <summary>
-        /// Make a shallow copy of column values without copying references of the source entity
-        /// </summary>
-        /// <param name="source">the source entity that will have it's values copied</param>
-        /// <returns></returns>
-        public static LINQEntityBase ShallowCopy(LINQEntityBase source)
-        {
-            PropertyInfo[] sourcePropInfos = source.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            PropertyInfo[] destinationPropInfos = source.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
-
-            // create an object to copy values into
-            Type entityType = source.GetType();
-            LINQEntityBase destination;
-            destination = Activator.CreateInstance(entityType) as LINQEntityBase;
-
-            foreach (PropertyInfo sourcePropInfo in sourcePropInfos)
-            {
-                if (Attribute.GetCustomAttribute(sourcePropInfo, typeof(ColumnAttribute), false) != null)
-                {
-                    PropertyInfo destPropInfo = destinationPropInfos.Where(pi => pi.Name == sourcePropInfo.Name).First();
-                    destPropInfo.SetValue(destination, sourcePropInfo.GetValue(source, null), null);
-                }
-            }
-
-            destination.LINQEntityState = EntityState.Original;
-            destination.LINQEntityGUID = source.LINQEntityGUID;
-
-            return destination;
-        }
-
-        #endregion
     }
 
 }
