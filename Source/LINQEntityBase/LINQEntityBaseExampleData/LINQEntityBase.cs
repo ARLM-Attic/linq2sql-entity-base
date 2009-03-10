@@ -67,9 +67,9 @@ namespace LINQEntityBaseExampleData
         #region static_variables
 
         // Static array variables that contains all property information                
-        static private Dictionary<string, Dictionary<string, PropertyInfo>> _cacheAssociationProperties; // stores the property info for associations
-        static private Dictionary<string, Dictionary<string, PropertyInfo>> _cacheAssociationFKProperties; // stores the property info for foreingKey associations
-        static private Dictionary<string, Dictionary<string, PropertyInfo>> _cacheDBGeneratedProperties; // stores the property info for columns that are DbGenerated
+        static private Dictionary<Type, Dictionary<string, PropertyInfo>> _cacheAssociationProperties; // stores the property info for associations
+        static private Dictionary<Type, Dictionary<string, PropertyInfo>> _cacheAssociationFKProperties; // stores the property info for foreingKey associations
+        static private Dictionary<Type, Dictionary<string, PropertyInfo>> _cacheDBGeneratedProperties; // stores the property info for columns that are DbGenerated
 
         #endregion static_variables
 
@@ -173,15 +173,15 @@ namespace LINQEntityBaseExampleData
             AssociationAttribute assocAttribute;
             ColumnAttribute colAttribute;
 
-            _cacheAssociationProperties = new Dictionary<string, Dictionary<string, PropertyInfo>>(); ;
-            _cacheAssociationFKProperties = new Dictionary<string, Dictionary<string, PropertyInfo>>(); ;
-            _cacheDBGeneratedProperties = new Dictionary<string, Dictionary<string, PropertyInfo>>(); ;
+            _cacheAssociationProperties = new Dictionary<Type, Dictionary<string, PropertyInfo>>(); ;
+            _cacheAssociationFKProperties = new Dictionary<Type, Dictionary<string, PropertyInfo>>(); ;
+            _cacheDBGeneratedProperties = new Dictionary<Type, Dictionary<string, PropertyInfo>>(); ;
 
             foreach (Type type in GetKnownTypes())
             {
-                _cacheAssociationProperties.Add(type.FullName, new Dictionary<string, PropertyInfo>());
-                _cacheAssociationFKProperties.Add(type.FullName, new Dictionary<string, PropertyInfo>());
-                _cacheDBGeneratedProperties.Add(type.FullName, new Dictionary<string, PropertyInfo>());
+                _cacheAssociationProperties.Add(type, new Dictionary<string, PropertyInfo>());
+                _cacheAssociationFKProperties.Add(type, new Dictionary<string, PropertyInfo>());
+                _cacheDBGeneratedProperties.Add(type, new Dictionary<string, PropertyInfo>());
 
                 foreach (PropertyInfo propInfo in type.GetProperties())
                 {
@@ -193,9 +193,9 @@ namespace LINQEntityBaseExampleData
                     {
                         // Store the FK relationships seperately (i.e. child to parent relationships);
                         if (assocAttribute.IsForeignKey != true)
-                            _cacheAssociationProperties[type.FullName].Add(propInfo.Name, propInfo);
+                            _cacheAssociationProperties[type].Add(propInfo.Name, propInfo);
                         else
-                            _cacheAssociationFKProperties[type.FullName].Add(propInfo.Name, propInfo);
+                            _cacheAssociationFKProperties[type].Add(propInfo.Name, propInfo);
                     }
                     else // check if its a column attribute second, less common
                     {
@@ -203,7 +203,7 @@ namespace LINQEntityBaseExampleData
 
                         if (colAttribute != null && colAttribute.IsDbGenerated == true)
                         {
-                            _cacheDBGeneratedProperties[type.FullName].Add(propInfo.Name, propInfo);
+                            _cacheDBGeneratedProperties[type].Add(propInfo.Name, propInfo);
                             continue;
                         }
                     }
@@ -236,7 +236,7 @@ namespace LINQEntityBaseExampleData
             _entityState = EntityState.NotTracked;
             _isKeepOriginal = false;
 
-            _entityTree = new EntityTree(this, _cacheAssociationProperties[this.GetType().FullName]);
+            _entityTree = new EntityTree(this, _cacheAssociationProperties[this.GetType()]);
         }
 
         #endregion constructor
@@ -322,9 +322,9 @@ namespace LINQEntityBaseExampleData
             {
                 // Check to see if the parent object is change tracked
                 // If there is, set the new flag, and tell this new object it's tracked
-                if (_cacheAssociationFKProperties[this.GetType().FullName].ContainsKey(e.PropertyName))
+                if (_cacheAssociationFKProperties[this.GetType()].ContainsKey(e.PropertyName))
                 {
-                    if (_cacheAssociationFKProperties[this.GetType().FullName].TryGetValue(e.PropertyName, out propInfo))
+                    if (_cacheAssociationFKProperties[this.GetType()].TryGetValue(e.PropertyName, out propInfo))
                     {
                         if (propInfo != null)
                         {
@@ -350,11 +350,11 @@ namespace LINQEntityBaseExampleData
                 // only go into this section if it's change tracked
                 if (this.LINQEntityState != EntityState.NotTracked)
                 {
-                    if (!_cacheAssociationProperties[this.GetType().FullName].ContainsKey(e.PropertyName))
+                    if (!_cacheAssociationProperties[this.GetType()].ContainsKey(e.PropertyName))
                     {
-                        if (_cacheAssociationFKProperties[this.GetType().FullName].ContainsKey(e.PropertyName))
+                        if (_cacheAssociationFKProperties[this.GetType()].ContainsKey(e.PropertyName))
                         {
-                            if (_cacheAssociationFKProperties[this.GetType().FullName].TryGetValue(e.PropertyName, out propInfo))
+                            if (_cacheAssociationFKProperties[this.GetType()].TryGetValue(e.PropertyName, out propInfo))
                             {
                                 // Parent FK has been set to null, object is now detached.
                                 if ((propInfo != null) && (propInfo.GetValue(this, null) == null))
@@ -372,7 +372,7 @@ namespace LINQEntityBaseExampleData
                         {
                             // if a db generated column has been modified
                             // do nothing
-                            bool isDbGenerated = _cacheDBGeneratedProperties[this.GetType().FullName].TryGetValue(e.PropertyName, out propInfo);
+                            bool isDbGenerated = _cacheDBGeneratedProperties[this.GetType()].TryGetValue(e.PropertyName, out propInfo);
                             if (isDbGenerated)
                                 return;
 
@@ -522,19 +522,19 @@ namespace LINQEntityBaseExampleData
         // Gets an Association Property from the cache
         private bool GetAssociationProperty(string propName, out PropertyInfo propInfo)
         {
-            return _cacheAssociationProperties[this.GetType().FullName].TryGetValue(propName, out propInfo);
+            return _cacheAssociationProperties[this.GetType()].TryGetValue(propName, out propInfo);
         }
 
         // Gets an FK Association Property from the cache
         private bool GetAssociationFKProperty(string propName, out PropertyInfo propInfo)
         {
-            return _cacheAssociationFKProperties[this.GetType().FullName].TryGetValue(propName, out propInfo);
+            return _cacheAssociationFKProperties[this.GetType()].TryGetValue(propName, out propInfo);
         }
 
         // Gets a Database Generate Property from the cache
         private bool GetDbGeneratedProperty(string propName, out PropertyInfo propInfo)
         {
-            return _cacheDBGeneratedProperties[this.GetType().FullName].TryGetValue(propName, out propInfo);
+            return _cacheDBGeneratedProperties[this.GetType()].TryGetValue(propName, out propInfo);
         }
 
         #endregion private_members
@@ -709,7 +709,7 @@ namespace LINQEntityBaseExampleData
                 {
                     if (entity.LINQEntityState == EntityState.CancelNew)
                     {
-                        foreach (PropertyInfo propInfo in _cacheAssociationFKProperties[entity.GetType().FullName].Values)
+                        foreach (PropertyInfo propInfo in _cacheAssociationFKProperties[entity.GetType()].Values)
                         {
                             propInfo.SetValue(entity, null, null);
                         }
