@@ -726,6 +726,25 @@ namespace LINQEntityBaseExampleData
                     }
                     else if (entity.LINQEntityState == EntityState.New)
                     {
+                        // If the entity's state is new, LINQ to SQL Tries to attach an FK references as "New" as well.
+                        // To avoid this, attach all FK references first as unmodified (unless they were intended to be new anyway) 
+                        // then attach the new record.
+                        foreach (PropertyInfo fkPropInfo in _cacheAssociationFKProperties[entity.GetType()].Values)
+                        {
+                            LINQEntityBase fkProp = fkPropInfo.GetValue(entity, null) as LINQEntityBase;
+                            if (fkProp != null && fkProp.LINQEntityState != EntityState.New)
+                            {                                
+                                try
+                                {
+                                    targetDataContext.GetTable(fkProp.GetType()).Attach(fkProp, false);
+                                }
+                                catch
+                                {
+                                    // do nothing as the entity was already attached.
+                                }
+                            }
+                        }
+
                         targetDataContext.GetTable(entity.GetEntityType()).InsertOnSubmit(entity);
                     }
                     else if (entity.LINQEntityState == EntityState.Modified || entity.LINQEntityState == EntityState.Detached)
