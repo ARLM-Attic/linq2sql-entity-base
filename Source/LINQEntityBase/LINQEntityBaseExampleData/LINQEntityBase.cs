@@ -1,4 +1,19 @@
-﻿using System;
+﻿/**************************************************************************************
+ *  LINQEntityBase.cs
+ *  Mar 10 2009     *** VERSION 1.1
+ *                  Minor Change: Changed Caching to use Types instead of strings for keys.                    
+ *  Jul 23 2009     Bug Fix: If the entity's state is "New", LINQ to SQL Tries to attach
+ *                  an FK references as "New" as well - even though this was unintended. 
+ *                  Fixed it so it does not try and insert FK referenced entities when 
+ *                  adding a new object. Thanks Mark & Stephan for finding/fixing the issue.
+ *  Aug 09 2009     Bug Fix: If the onModifyKeepOriginal parameter on SetAsChangeTrackingRoot()
+ *                  is set to true and an object is detached from a collection (i.e. x.remove(y)), 
+ *                  the object was not being attached properly to the data context when 
+ *                  SynchroniseWithDataContext() was called, causing an error to be thrown.
+ *                  Thanks Yaki for finding the issue!
+ * ************************************************************************************/
+
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data.Linq;
@@ -359,6 +374,7 @@ namespace LINQEntityBaseExampleData
                                 // Parent FK has been set to null, object is now detached.
                                 if ((propInfo != null) && (propInfo.GetValue(this, null) == null))
                                 {
+                                    this._originalEntityValue = this._originalEntityValueTemp;
                                     LINQEntityState = EntityState.Detached;
                                 }
                                 else if (LINQEntityState != EntityState.Modified && LINQEntityState != EntityState.Detached)
