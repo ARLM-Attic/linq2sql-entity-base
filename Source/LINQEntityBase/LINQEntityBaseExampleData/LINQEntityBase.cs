@@ -180,6 +180,32 @@ namespace LINQEntityBaseExampleData
         }
 
         /// <summary>
+        /// Returns true if two entities have the same property values (does not traverse releationships).
+        /// </summary>
+        /// <param name="source"></param>
+        /// <returns></returns>
+        public static bool ShallowCompare(LINQEntityBase entity1, LINQEntityBase entity2)
+        {
+            if (!object.ReferenceEquals(entity1.GetType(),entity2.GetType()))
+            {
+                return false;
+            }
+
+            PropertyInfo[] entity1PropInfos = entity1.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            PropertyInfo[] entity2PropInfos = entity2.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+            // Find if there are any properties that do not match that are custom attributes
+            var compareResults = from pi1 in entity1PropInfos.Where( p1 => Attribute.GetCustomAttribute(p1, typeof(ColumnAttribute), false) != null)
+                                 join pi2 in entity2PropInfos.Where( p2 => Attribute.GetCustomAttribute(p2, typeof(ColumnAttribute), false) != null) 
+                                   on pi1.Name equals pi2.Name into pij                                 
+                                 from pi2 in pij.DefaultIfEmpty()
+                                 select new {Match = (pi1.GetValue(entity1,null) == pi2.GetValue(entity2,null)) };                                  
+
+            return (compareResults.Where( cr => cr.Match == false).Count() == 0);
+
+        }
+
+        /// <summary>
         /// Loops through the available properties on the class and finds associated, FK and database generated properties,
         /// putting them into a cache to be used later.
         /// </summary>
