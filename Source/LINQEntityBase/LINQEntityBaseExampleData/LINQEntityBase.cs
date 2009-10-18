@@ -11,6 +11,13 @@
  *                  the object was not being attached properly to the data context when 
  *                  SynchroniseWithDataContext() was called, causing an error to be thrown.
  *                  Thanks Yaki for finding the issue!
+ *  Oct 18 2009     Feature: Added ShallowCompare() method for comparing two entities.
+ *                  Feature: If the onModifyKeepOriginal parameter on SetAsChangeTrackingRoot()
+ *                  is set to true, and an object is modified (i.e. EntityState == Modified)
+ *                  and then modified again in a way which set's it back to be the same as 
+ *                  property values as it's original state, the entity will now have it's 
+ *                  EntityState set to back Original (instead of remaining as EntityState ==
+ *                  "Modified".
  * ************************************************************************************/
 
 using System;
@@ -418,11 +425,21 @@ namespace LINQEntityBaseExampleData
                             if (isDbGenerated)
                                 return;
 
+                            // if the object is already modified and the property values have reverted back to their
+                            // original values, set the state back to "Original"
+                            if (LINQEntityState == EntityState.Modified && this._originalEntityValue != null)
+                            {
+                                if(ShallowCompare(this, this._originalEntityValue))
+                                {
+                                    LINQEntityState = EntityState.Original;
+                                    this._originalEntityValue = null;
+                                }
+                            }
                             // if the object isn't already modified or detached
                             // set it as modified
-                            if (LINQEntityState != EntityState.Modified && LINQEntityState != EntityState.Detached)
+                            else if (LINQEntityState != EntityState.Modified && LINQEntityState != EntityState.Detached)
                             {
-                                this._originalEntityValue = this._originalEntityValueTemp;                                
+                                this._originalEntityValue = this._originalEntityValueTemp;
                                 LINQEntityState = EntityState.Modified;
                             }
                         }
