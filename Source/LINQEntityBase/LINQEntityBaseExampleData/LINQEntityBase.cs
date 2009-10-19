@@ -206,7 +206,7 @@ namespace LINQEntityBaseExampleData
                                  join pi2 in entity2PropInfos.Where( p2 => Attribute.GetCustomAttribute(p2, typeof(ColumnAttribute), false) != null) 
                                    on pi1.Name equals pi2.Name into pij                                 
                                  from pi2 in pij.DefaultIfEmpty()
-                                 select new {Match = (pi1.GetValue(entity1,null) == pi2.GetValue(entity2,null)) };                                  
+                                 select new {Match = object.Equals(pi1.GetValue(entity1,null),pi2.GetValue(entity2,null))};                                  
 
             return (compareResults.Where( cr => cr.Match == false).Count() == 0);
 
