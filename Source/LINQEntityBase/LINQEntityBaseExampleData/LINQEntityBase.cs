@@ -18,6 +18,7 @@
  *                  property values as it's original state, the entity will now have it's 
  *                  EntityState set to back Original (instead of remaining as EntityState ==
  *                  "Modified".
+ *  Oct 19 2009     Bug Fix: Fixed Comparison bug in ShadownCompare() method.
  * ************************************************************************************/
 
 using System;
