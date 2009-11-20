@@ -17,8 +17,10 @@
  *                  and then modified again in a way which set's it back to be the same as 
  *                  property values as it's original state, the entity will now have it's 
  *                  EntityState set to back Original (instead of remaining as EntityState ==
- *                  "Modified".
+ *                  Modified.
  *  Oct 19 2009     Bug Fix: Fixed Comparison bug in ShadownCompare() method.
+ *  Nov 19 2009     Bug Fix: When EntityState == CanceNew, don't change to EntityState ==
+ *                  Deleted when SetAsDeleteOnSubmit is called.
  * ************************************************************************************/
 
 using System;
@@ -1037,7 +1039,7 @@ namespace LINQEntityBaseExampleData
 
             if (this.LINQEntityState == EntityState.New)
                 this.LINQEntityState = EntityState.CancelNew;
-            else
+            else if(this.LINQEntityState != EntityState.CancelNew)
                 this.LINQEntityState = EntityState.Deleted;
 
         }
