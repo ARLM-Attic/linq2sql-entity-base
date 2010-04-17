@@ -21,6 +21,7 @@
  *  Oct 19 2009     Bug Fix: Fixed Comparison bug in ShadownCompare() method.
  *  Nov 19 2009     Bug Fix: When EntityState == CanceNew, don't change to EntityState ==
  *                  Deleted when SetAsDeleteOnSubmit is called.
+ *  Apr 17 2010     *** Version 1.2
  * ************************************************************************************/
 
 using System;
