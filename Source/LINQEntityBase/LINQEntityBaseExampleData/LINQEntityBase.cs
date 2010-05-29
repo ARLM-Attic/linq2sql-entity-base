@@ -22,6 +22,10 @@
  *  Nov 19 2009     Bug Fix: When EntityState == CanceNew, don't change to EntityState ==
  *                  Deleted when SetAsDeleteOnSubmit is called.
  *  Apr 17 2010     *** VERSION 1.2
+ *  May 29 2010     Feature: Changed Reflection in GetKnownTypes() to reflect over all assemblies
+ *                  rather than just the same one that the LINQEntityBase class is in. 
+ *                  Allowing LINQEntityBase class to be in a seperate assembly to the Data Context
+ *                  it services.
  * ************************************************************************************/
 
 using System;
@@ -96,7 +100,10 @@ namespace LINQEntityBaseExampleData
         static private Dictionary<Type, Dictionary<string, PropertyInfo>> _cacheAssociationProperties; // stores the property info for associations
         static private Dictionary<Type, Dictionary<string, PropertyInfo>> _cacheAssociationFKProperties; // stores the property info for foreingKey associations
         static private Dictionary<Type, Dictionary<string, PropertyInfo>> _cacheDBGeneratedProperties; // stores the property info for columns that are DbGenerated
-
+        // Known types 
+        static private List<Type> _knownTypes; // stores those class subclassing LINQEntityBase
+        // Locks
+        static private object _knownTypesLock = new object();
         #endregion static_variables
 
         #region static_methods
@@ -107,9 +114,14 @@ namespace LINQEntityBaseExampleData
         /// <returns></returns>        
         private static List<Type> GetKnownTypes()
         {
-            return (from a in Assembly.GetExecutingAssembly().GetTypes()
-                    where a.IsSubclassOf(typeof(LINQEntityBase))
-                    select a).ToList();
+            lock (_knownTypesLock)
+            {
+                if(_knownTypes == null)
+                    _knownTypes = (from kt in AppDomain.CurrentDomain.GetAssemblies().ToList().SelectMany(t => t.GetTypes())
+                                   where kt.IsSubclassOf(typeof(LINQEntityBase))
+                                   select kt).ToList();
+            }
+            return _knownTypes;
         }
 
         /// <summary>
