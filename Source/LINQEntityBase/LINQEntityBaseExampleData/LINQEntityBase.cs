@@ -26,6 +26,7 @@
  *                  rather than just the same one that the LINQEntityBase class is in. 
  *                  Allowing LINQEntityBase class to be in a seperate assembly to the Data Context
  *                  it services.
+ *  Jun 15 2010     Added SuppressMessage Attributes to suppress Code Analysis messages.
  * ************************************************************************************/
 
 using System;
@@ -76,7 +77,7 @@ namespace LINQEntityBaseExampleData
     /// e.g. EntityBase="LINQEntityBaseExample.LINQEntityBase"
     /// 
     /// </summary>    
-    [DataContract(IsReference=true)]
+    [DataContract(IsReference = true), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "LINQ")]
     [KnownType("GetKnownTypes")]
     public abstract class LINQEntityBase
     {
@@ -86,6 +87,7 @@ namespace LINQEntityBaseExampleData
         /// <summary>
         /// Constructor
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
         static LINQEntityBase()
         {
             // Get the Important LINQ entity properties
@@ -130,6 +132,7 @@ namespace LINQEntityBaseExampleData
         /// <param name="EntitySource">The Entity to be serialized</param>
         /// <param name="KnownTypes">Any Known Types. Pass in null if you're datacontext is in the same assembly as the LINQ to Entity Base</param>
         /// <returns>An XML string representing the serialized entity</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "Known")]
         public static string SerializeEntity<T>(T entitySource, IEnumerable<Type> KnownTypes)
         {
             DataContractSerializer dcs;
@@ -153,6 +156,7 @@ namespace LINQEntityBaseExampleData
         /// <param name="EntityType">The type of the entity being deserialized</param>
         /// <param name="KnownTypes">Any Known Types. Pass in null if you're datacontext is in the same assembly as the LINQ to Entity Base</param>
         /// <returns></returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "Known"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "Entity")]
         public static object DeserializeEntity(string EntitySource, Type EntityType, IEnumerable<Type> KnownTypes)
         {
             DataContractSerializer dcs;
@@ -346,6 +350,7 @@ namespace LINQEntityBaseExampleData
         /// </summary>
         /// <param name="sender">child object</param>
         /// <param name="e">Property Changing arguements</param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
         private void PropertyChanging(object sender, PropertyChangingEventArgs e)
         {
             // Ignore events if syncronising with DB
@@ -553,7 +558,7 @@ namespace LINQEntityBaseExampleData
         /// private variables are setup.
         /// </summary>
         /// <param name="sc"></param>
-        [OnDeserializing()]
+        [OnDeserializing(), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "sc")]
         private void BeforeDeserializing(System.Runtime.Serialization.StreamingContext sc)
         {
             Init();
@@ -563,7 +568,7 @@ namespace LINQEntityBaseExampleData
         /// Called at the final stage of serialization to make sure that the interal
         /// change tracking references are correct.
         /// </summary> 
-        [OnDeserialized()]
+        [OnDeserialized(), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "sc")]
         private void AfterDeserialized(System.Runtime.Serialization.StreamingContext sc)
         {
             // Grab the important properties first
@@ -619,7 +624,7 @@ namespace LINQEntityBaseExampleData
         /// <summary>
         /// Returns an ID that is unique for this object.
         /// </summary>
-        [DataMember(Order = 1)]
+        [DataMember(Order = 1), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "LINQ"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "GUID")]
         public string LINQEntityGUID
         {
             get 
@@ -632,7 +637,7 @@ namespace LINQEntityBaseExampleData
             }
         }
 
-        [DataMember(Order = 2)]
+        [DataMember(Order = 2), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "LINQ")]
         public EntityState LINQEntityState
         {
             get
@@ -649,6 +654,7 @@ namespace LINQEntityBaseExampleData
         /// This method flattens the hierachy of objects into a single list that can be queried by linq
         /// </summary>
         /// <returns></returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1002:DoNotExposeGenericLists")]
         public List<LINQEntityBase> ToEntityTree()
         {            
             // Deleted records won't show up in entity tree
@@ -702,6 +708,7 @@ namespace LINQEntityBaseExampleData
         /// </summary>
         /// <param name="initialEntityState">The initial state of the root entity</param>
         /// <param name="onModifyKeepOriginal">If modified, original entity state is kept for attachment to context later on.</param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
         public void SetAsChangeTrackingRoot(EntityState initialEntityState, bool onModifyKeepOriginal)
         {
             // Throw an exception if this object is already being change tracked
@@ -743,6 +750,7 @@ namespace LINQEntityBaseExampleData
         /// with a data context. Assumes you want cascade deletes.
         /// </summary>
         /// <param name="targetDataContext">The data context that will apply the changes</param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Synchronise")]
         public void SynchroniseWithDataContext(DataContext targetDataContext)
         {
             SynchroniseWithDataContext(targetDataContext, true);
@@ -754,6 +762,7 @@ namespace LINQEntityBaseExampleData
         /// </summary>
         /// <param name="targetDataContext">The data context that will apply the changes</param>
         /// <param name="cascadeDelete">Whether or not casade deletes is allowed</param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Synchronise"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         public void SynchroniseWithDataContext(DataContext targetDataContext, bool cascadeDelete)
         {
             // Before doing anything, check to make sure that the new datacontext
@@ -893,6 +902,7 @@ namespace LINQEntityBaseExampleData
         /// <param name="ApplyToChildEntities">
         /// Indicates whether all child objects are also marked to be inserted
         /// </param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "Apply")]
         public void SetAsInsertOnSubmit(bool ApplyToChildEntities)
         {
             if (ApplyToChildEntities == true)
@@ -911,6 +921,7 @@ namespace LINQEntityBaseExampleData
         /// <summary>
         /// Set the entity to be Inserted into the database
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
         public void SetAsInsertOnSubmit()
         {
             if (this.LINQEntityState == EntityState.Detached)
@@ -944,6 +955,7 @@ namespace LINQEntityBaseExampleData
         /// <param name="ApplyToChildEntities">
         /// Indicates whether all child entities are also marked to be updates
         /// </param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "Apply")]
         public void SetAsUpdateOnSubmit(bool ApplyToChildEntities)
         {
             if (ApplyToChildEntities == true)
@@ -967,6 +979,7 @@ namespace LINQEntityBaseExampleData
         /// The entity value passed in should be an earlier shallow copy of the entity.
         /// This value can be set to null to indicate if the original entity value should be removed if it exists from a previous modification.
         /// </param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "Original")]
         public void SetAsUpdateOnSubmit(LINQEntityBase OriginalValue)
         {
             if (this.LINQEntityState == EntityState.Detached)
@@ -989,6 +1002,7 @@ namespace LINQEntityBaseExampleData
         /// <param name="ApplyToChildEntities">
         /// Indicates whether all child entities should be marked so that they do not modify the database.
         /// </param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "Apply")]
         public void SetAsNoChangeOnSubmit(bool ApplyToChildEntities)
         {
             if (ApplyToChildEntities == true)
@@ -1007,6 +1021,7 @@ namespace LINQEntityBaseExampleData
         /// <summary>
         /// Indicates that the entity will NOT modify the database.
         /// </summary>        
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
         public void SetAsNoChangeOnSubmit()
         {
             if (this.LINQEntityState == EntityState.Detached)
@@ -1024,6 +1039,7 @@ namespace LINQEntityBaseExampleData
         /// <param name="ApplyToChildEntities">
         /// Indicates whether all child entities should be marked for deletion (cascade delete).
         /// </param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "Apply")]
         public void SetAsDeleteOnSubmit(bool ApplyToChildEntities)
         {
             if (ApplyToChildEntities == true)
@@ -1042,6 +1058,7 @@ namespace LINQEntityBaseExampleData
         /// <summary>
         /// Set the entity to Deleted on Syncronisation with Database
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
         public void SetAsDeleteOnSubmit()
         {
             if (this.LINQEntityState == EntityState.Detached)
@@ -1061,6 +1078,7 @@ namespace LINQEntityBaseExampleData
         /// Finds the Entity Type of the current object by find the class marked with the TableAttribute
         /// </summary>
         /// <returns></returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         public Type GetEntityType()
         {
             Type type = this.GetType();
